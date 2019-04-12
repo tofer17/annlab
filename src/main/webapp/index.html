@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Neural Network Experiments</title>
+<script src="index.js"></script>
+<style>
+body {
+	font-family: sans-serif;
+	font-size: 0.9em;
+}
+
+.opt input, .opt select {
+	width: 5em;
+	float: right;
+}
+
+.opt {
+	float: left;
+	width: 20em;
+	padding: 0px 2px 2px 2px;
+	height: 1.5em;
+}
+
+.opt label {
+	float: left;
+}
+
+.clr {
+	clear: both;
+}
+
+h2 span {
+	float: right;
+	font-weight: normal;
+	font-size: 0.5em;
+	cursor: default;
+}
+
+.roll {
+	margin-left: 2em;
+	background: #eee;
+	padding: 2px;
+}
+
+#optsdiv {
+	
+}
+
+.protolayer span {
+	width: 4em;
+	text-align: right;
+	display: inline-block;
+	margin-right: 4px
+}
+
+#protodiv input, #protodiv select {
+	width: 5em;
+	margin-right: 4px;
+	text-align: center;
+}
+
+#protodiv select#uplink {
+	width: 3.5em;
+}
+
+#rundiv progress {
+	xfloat: right;
+}
+
+#rundiv table {
+	width: 100%;
+	font-size: 0.7em;
+}
+
+#rundiv td, #rundiv th {
+	text-align: left;
+}
+</style>
+</head>
+<body>
+	<div id="annlab">
+		<h2>
+			Options<span>[ - ]</span>
+		</h2>
+		<div id="optsdiv" class="roll">
+			<div class="opt">
+				<label for="eliteCount">Elites</label><input id="eliteCount"
+					type="number" min="0" />
+			</div>
+			<div class="opt">
+				<label for="breedScore">Breed Score</label><input id="breedScore"
+					type="number" min="0.0" step="0.1" max="500" />
+			</div>
+			<div class="opt">
+				<label for="agentCount">Agents</label><input id="agentCount"
+					type="number" min="2" step="2" />
+			</div>
+			<div class="opt">
+				<label for="xoverPercent">Crossover Percent</label><input
+					id="xoverPercent" type="number" min="0" max="100" step="10" />
+			</div>
+			<div class="opt">
+				<label for="xoverChance">Crossover Chance</label><input
+					id="xoverChance" type="number" min="0" max="100" step="10" />
+			</div>
+			<div class="opt ">
+				<label for="xoverFunction">Crossover Function</label> <select
+					id="xoverFunction">
+					<option value="uniform">Uniform</option>
+					<option value="single">Single</option>
+					<option value="double">Double</option>
+					<option value="triple">Triple</option>
+					<option value="quad">Quadruple</option>
+				</select>
+			</div>
+			<div class="opt">
+				<label for="xoverBias">Crossover Bias</label><input id="xoverBias"
+					type="checkbox" checked>
+			</div>
+			<div class="opt">
+				<label for="mutationChance">Mutation Chance</label><input
+					id="mutationChance" type="number" min="0" max="100" />
+			</div>
+			<div class="opt">
+				<label for="mutationFunction">Mutation Function</label> <select
+					id="mutationFunction">
+					<option value="subtle">Subtle</option>
+					<option value="random">Random</option>
+				</select>
+			</div>
+			<div class="opt">
+				<label for="mutateBias">Mutate Bias</label><input id="mutateBias"
+					type="checkbox" checked>
+			</div>
+			<hr class="clr" />
+		</div>
+		<h2>
+			Prototype<span>[ - ]</span>
+		</h2>
+		<div id="protodiv" class="roll">
+			<div class="protolayer">
+				<span>Inputs</span><input type="number" min="1" step="1" value="2" /><select
+					disabled><option>Activator</option></select><input
+					style="width: 8em" value="0.2,0.5" />
+			</div>
+			<div class="protolayer">
+				<span>Hidden</span><input type="number" min="1" step="1" value="4" /><select><option>Sigmoid</option></select>
+				<button>^</button>
+				<button>+</button>
+				<button>X</button>
+				<button>v</button>
+			</div>
+			<div class="protolayer">
+				<span>Hidden</span><input type="number" min="1" step="1" value="3" /><select><option>Step</option></select>
+				<button>^</button>
+				<button>+</button>
+				<button>X</button>
+				<button>v</button>
+			</div>
+			<div class="protolayer">
+				<span>Outputs</span><input type="number" min="1" step="1" value="1" /><select><option>Linear</option></select><input
+					style="width: 8em" value="0.7" />
+			</div>
+			<hr class="clr" />
+		</div>
+		<h2>
+			Run<span>[ - ]</span>
+		</h2>
+		<div id="rundiv" class="roll">
+			<div>
+				<button id="reset">Reset</button>
+				<button id="run">Run</button>
+				<button id="step1">Step 1</button>
+				<button id="step100">Step 100</button>
+				<button id="step1000">Step 1k</button>
+			</div>
+			<progress value="100" max="100"></progress>
+			<table>
+				<tr>
+					<th>Gen</th>
+					<th>Best</th>
+					<th>Worst</th>
+					<th>Min</th>
+					<th>Max</th>
+					<th>Mutations</th>
+					<th>time</th>
+				</tr>
+				<tr>
+					<td>123</td>
+					<td>0.40227547967027455</td>
+					<td>5.528344855945169</td>
+					<td>1.1022754796702745</td>
+					<td>6.228344855945169</td>
+					<td>345</td>
+					<td>8</td>
+			</table>
+			<hr class="clr" />
+		</div>
+		<h2>
+			Inspector<span>[ + ]</span>
+		</h2>
+		<div id="inspdiv" style="display: none" class="roll">
+			<hr class="clr" />
+		</div>
+	</div>
+</body>
+</html>
