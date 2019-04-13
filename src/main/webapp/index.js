@@ -15,6 +15,9 @@
  * </ul>
  */
 
+/*
+ * Essentially-- go through and replace all "new" arrays with "reusable" arrays.
+ */
 
 /**
  * Receives a number and padding-amount and returns a padded array: <br/>
@@ -30,6 +33,7 @@
  * @returns An array of integers padding-amount in length.
  */
 function numberToDNA ( number, padding ) {
+	// FIXME: reuse array
 	return number.toFixed( padding ).replace( ".", "" ).split("");
 }
 
@@ -63,6 +67,7 @@ function dnaToNumber ( dna ) {
  * @returns An array of unique integers count-long.
  */
 function randomNumbers ( count, min, max ) {
+	// FIXME: reuse array
 
 	const ret = Array( count );
 
@@ -144,6 +149,7 @@ class SingletonObject extends Object {
 
 /**
  * Class for Activation Functions to subclass.
+ * FIXME: Add "activated" feature
  * @extends Object
  */
 class Activator extends SingletonObject {
@@ -182,6 +188,7 @@ class LinearActivator extends Activator {
 			input += neuron.inputs[i].output * neuron.weights[i];
 		}
 
+		// FIXME: Check if activated
 		return 1.0 / (1.0 + ( input + neuron.bias ) );
 		//return input + neuron.bias;
 	};
@@ -258,6 +265,11 @@ class Neuron extends Object {
 		this.padding = 19;
 	};
 
+	// TASK: blahs!
+
+	// XXX: ok!
+
+	// FIXME: hello
 	get dna () {
 		let dna = [ numberToDNA( this.bias, this.padding ) ];
 		for ( let weight of this.weights ) {
@@ -1253,6 +1265,26 @@ class ANNLab extends Object {
 
 		return div;
 	};
+}
+
+/*
+ *            0                 1                 2
+ * buffer3x4: [.][.][.][.](2) | [ ][ ][ ][ ]( ) | [.][.][.][.]()
+ * slots:     [1][][]
+ *
+ */
+class Hatch extends Object {
+	constructor ( elementCount, elementSize ) {
+		super();
+		this.elementCount = elementCount;
+		this.elementSize = elementSize;
+		this.bufferLength = elementCount * elementSize;
+		Object.defineProperty( this, "buffer", { value : new Array( bufferLength ) } );
+		Object.defineProperty( this, "slots", { value : new Array( elementCount ) } );
+
+	};
+
+
 }
 
 
