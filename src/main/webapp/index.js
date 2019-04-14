@@ -15,9 +15,6 @@
  * </ul>
  */
 
-/*
- * Essentially-- go through and replace all "new" arrays with "reusable" arrays.
- */
 
 /**
  * Receives a number and padding-amount and returns a padded array: <br/>
@@ -33,7 +30,6 @@
  * @returns An array of integers padding-amount in length.
  */
 function numberToDNA ( number, padding ) {
-	// FIXME: reuse array
 	return number.toFixed( padding ).replace( ".", "" ).split("");
 }
 
@@ -50,7 +46,17 @@ function numberToDNA ( number, padding ) {
  * @returns a float at least 0.0 and less than 10.0.
  */
 function dnaToNumber ( dna ) {
-	return parseFloat( dna.join("").slice( 0, 1 ) + "." + dna.join("").substring(1) );
+	const s = dna.join( "" );
+	return parseFloat( s.slice( 0, 1 ) + "." + s.substring(1) );
+}
+
+
+/**
+ * Stub: so that other PRNGs can be used such as crypto.randomNumbers();
+ * @returns
+ */
+function random () {
+	return Math.random();
 }
 
 
@@ -58,29 +64,26 @@ function dnaToNumber ( dna ) {
  * Generates count amount of unique random numbers at least minimum and less than a maximum. <code>Math.random()</code>
  * is used. <code>randomNumbers( 3, 0, 2 ) -> [2,0,1]</code>
  *
- * @param count
- *            The number of random numbers to generate.
+ * @param rnarr
+ *            The array to fill with random numbers.
  * @param min
  *            The minimum "at least" value.
  * @param max
  *            The maximum "less than" value.
  * @returns An array of unique integers count-long.
  */
-function randomNumbers ( count, min, max ) {
-	// FIXME: reuse array
+function randomNumbers ( rnarr, min, max ) {
 
-	const ret = Array( count );
-
-	for ( let i = 0; i < count; i++ ) {
-		const t = min + Math.floor( Math.random() * ( max - min ) );
-		if ( ret.indexOf( t ) == -1 ) {
-			ret[ i ] = t;
+	for ( let i = 0; i < rnarr.length; i++ ) {
+		const t = min + Math.floor( random() * ( max - min ) );
+		if ( rnarr.indexOf( t ) == -1 ) {
+			rnarr[ i ] = t;
 		} else {
 			i--;
 		}
 	}
 
-	return ret;
+	return rnarr;
 }
 
 /**
@@ -266,7 +269,6 @@ class Neuron extends Object {
 		this.padding = 19;
 	};
 
-	// FIXME: hello
 	get dna () {
 		let dna = [ numberToDNA( this.bias, this.padding ) ];
 		for ( let weight of this.weights ) {
@@ -912,16 +914,13 @@ class ANNLab extends Object {
 		return MuTAt3;
 	};
 
-	//run ( targetScores, ...inputBiases ) {
 	run () {
 
 		const inputBiases = this.protoAgent.inputBiases;
 		for ( let agent of this.agents ) {
-			//agent.setBiases( 0, ...inputBiases );
 			agent.inputBiases = inputBiases;
 		}
 
-		//const runResult = this.fitnessFunction.scorePopulation( this.agents, targetScores );
 		const runResult = this.fitnessFunction.scorePopulation( this.agents, this.protoAgent.outputBiases );
 
 		this.runs ++;
@@ -1262,26 +1261,6 @@ class ANNLab extends Object {
 
 		return div;
 	};
-}
-
-/*
- *            0                 1                 2
- * buffer3x4: [.][.][.][.](2) | [ ][ ][ ][ ]( ) | [.][.][.][.]()
- * slots:     [1][][]
- *
- */
-class Hatch extends Object {
-	constructor ( elementCount, elementSize ) {
-		super();
-		this.elementCount = elementCount;
-		this.elementSize = elementSize;
-		this.bufferLength = elementCount * elementSize;
-		Object.defineProperty( this, "buffer", { value : new Array( bufferLength ) } );
-		Object.defineProperty( this, "slots", { value : new Array( elementCount ) } );
-
-	};
-
-
 }
 
 
