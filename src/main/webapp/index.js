@@ -73,6 +73,9 @@ function random () {
  * @returns An array of unique integers count-long.
  */
 function randomNumbers ( rnarr, min, max ) {
+	if ( typeof( rnarr ) == "number" ) {
+		rnarr = new Array( rnarr );
+	}
 
 	for ( let i = 0; i < rnarr.length; i++ ) {
 		const t = min + Math.floor( random() * ( max - min ) );
@@ -748,10 +751,83 @@ BeddingFunction.register( BeddingFunction );
  * ...such that the default is Uniform.
  */
 class CrossoverFunction extends SingletonObject {
+
+	constructor () {
+		super();
+
+		this.opts = {};
+		this.opts.count = 0;
+		this.opts.chance = 0.0;
+		this.opts.mutationFunction = null;
+	}
+
+	/**
+	 * Default is uniform: x% of the dna part has a y% chance and mutationFunction.
+	 * Thus, opts is: <code>{ count : i, chance : f, mutationFunction : func </code>.
+	 */
+	crossover ( dnaA, dnaB ) {
+		const rn = randomNumbers( this.opts.count, 0, dnaA.length );
+
+		let MuTAt3 = 0;
+
+		for ( let i of rn ) {
+			if ( Math.random() <= this.opts.chance ) {
+				const tmp = dnaA[ i ];
+				dnaA[ i ] = dnaB[ i ];
+				dnaB[ i ] = tmp;
+			}
+
+			if ( this.opts.mutationFunction != null ) {
+				this.opts.mutationFunction.mutate( dnaA, dnaB );
+			}
+		}
+
+		return MuTAt3;
+	};
 }
 CrossoverFunction.register( CrossoverFunction );
 
+class KPointCrossoverFunction extends CrossoverFunction {
+	constructor () {
+		super();
 
+		this.opts.k = 1;
+	};
+
+	crossover ( dnaA, dnaB ) {
+
+		let MuTAt3 = 0;
+
+		for ( let i = 0; i < this.opts.k; i++ ) {
+			MuTAt3 += this._crossover( dnaA, dnaB );
+		}
+
+		return MuTAt3;
+	}
+
+	_crossover ( dnaA, dnaB ) {
+
+		const p = Math.floor( Math.random() * dnaA.length );
+
+		let MuTAt3 = 0;
+
+		for ( let i = p; i < dnaA.length; i++ ) {
+			if ( Math.random() <= this.opts.chance ) {
+				const tmp = dnaA[i];
+				dnaA[ i ] = dnaB[ i ];
+				dnaB[ i ] = tmp;
+			}
+
+			if ( this.opts.mutationFunction != null ) {
+				this.opts.mutationFunction.mutate( dnaA, dnaB );
+			}
+		}
+
+		return MuTAt3;
+	};
+}
+CrossoverFunction.register( KPointCrossoverFunction );
+x
 /**
  * The Mutation Function mutates DNA in unimaginable radioactive ways.
  */
@@ -792,7 +868,10 @@ class ANNLab extends Object {
 
 		this.sortingFunction = SortingFunction.forName();
 		this.fitnessFunction = FitnessFunction.forName();
-		this.elitismFunction = ElitismFunction.forName()
+		this.elitismFunction = ElitismFunction.forName();
+
+		this.crossoverFunction = CrossoverFunction.forName( "KPointCrossoverFunction" );
+		this.mutationFunction = null;
 
 		this.protoAgent = new Agent( "P" )
 			.addLayer( 2, "Activator", [ 0.2, 0.5 ] )//x x
@@ -840,6 +919,12 @@ class ANNLab extends Object {
 		this.node.progress.max = n;
 		let i = 0;
 
+		this.crossoverFunction.opts.count = this.crossoverCount;
+		this.crossoverFunction.opts.chance = this.crossoverChance;
+		this.crossoverFunction.opts.k = 2;
+		this.crossoverFunction.opts.mutationFunction = this.mutationFunction;
+
+
 		Promise.resolve().then( ()=>{
 			for ( i = 0; i < n; i ++ ) {
 				setTimeout( this.runGen.bind(this), 0 );
@@ -851,7 +936,6 @@ class ANNLab extends Object {
 	runGen () {
 		this.node.progress.value++;
 
-		//let run = this.run( this.target, 0.5, 0.2 );
 		let run = this.run();
 
 		this.sortingFunction.sort( this.agents )
@@ -879,7 +963,6 @@ class ANNLab extends Object {
 
 		const inputBiases = this.protoAgent.inputBiases;
 		for ( let agent of this.agents ) {
-			//agent.inputBiases = inputBiases;
 			agent.prepareRun( inputBiases );
 		}
 
@@ -904,8 +987,10 @@ class ANNLab extends Object {
 			let partA = dnaA[ i ];
 			let partB = dnaB[ i ];
 
+			MuTAt3 += this.crossoverFunction.crossover( partA, partB );
+
 			// MuTAt3 += this.uniformCrossover( partA, partB );
-			MuTAt3 += this.pointCrossover( partA, partB );
+			//  MuTAt3 += this.pointCrossover( partA, partB );
 			// MuTAt3 += this.kPointCrossover(4, partA, partB );
 		}
 
@@ -972,7 +1057,6 @@ class ANNLab extends Object {
 		}
 		return MuTAt3;
 	};
-
 
 	incarnateProtoAgent () {
 		console.log( this.node.protoDiv );
