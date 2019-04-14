@@ -253,8 +253,9 @@ class Neuron extends Object {
 		this.bias = bias != null ? bias : Math.random();
 		this.lastOutput = 0.0;
 
-		this.elite = false;
-		this.selected = false;
+		this.isInput = false;
+		this.isElite = false;
+		this.isSelected = false;
 
 		this.inputs = [];
 		this.weights = [];
@@ -264,10 +265,6 @@ class Neuron extends Object {
 
 		this.padding = 19;
 	};
-
-	// TASK: blahs!
-
-	// XXX: ok!
 
 	// FIXME: hello
 	get dna () {
@@ -556,7 +553,7 @@ class ElitismFunction extends SingletonObject {
 			// FIXME: "2" is hardcoded and needs to adhere to criteria given.
 			if ( ret.length < 2 ) {
 				ret.push( agent );
-				agent.elite = true;
+				agent.isElite = true;
 			}
 		}
 
@@ -569,7 +566,7 @@ class ElitismFunction extends SingletonObject {
 	replication ( population, criteria ) {
 		const ret = [];
 		for ( let agent of population ) {
-			if ( agent.elite ) {
+			if ( agent.isElite ) {
 				; // FIXME: do something.
 			}
 		}
@@ -627,7 +624,7 @@ class SelectionFunction extends SingletonObject {
 	 */
 	select ( population, criteria ) {
 		for ( let agent of population ) {
-			agent.selected = true;
+			agent.isSelected = true;
 		}
 
 		return population;
@@ -650,7 +647,7 @@ class TopPercentileSelectionFunction extends SingletonObject {
 		const ret = new Array( cut );
 
 		for ( let i = 0; i < population.length; i++ ) {
-			population[i].selected = i <= cut;
+			population[i].isSelected = i <= cut;
 			if ( i <= cut ) {
 				ret.push( population[i] );
 			}
@@ -668,7 +665,7 @@ class BeddingFunction extends SingletonObject {
 
 	static canBed ( i, n, population ) {
 		for ( i; i < i + n; i++ ) {
-			if ( !popultion[ i ].selected ) {
+			if ( !popultion[ i ].isSelected ) {
 				return false;
 			}
 		}
