@@ -869,7 +869,6 @@ class AggressiveMutationFunction extends MutationFunction {
 
 			if ( Math.random() < 0.5 ) {
 				dnaA[ index ] = "" + Math.floor( ( Math.random() * 10 ) % 10 );
-		console.log( dnaA[index] );
 			} else {
 				dnaB[ index ] = "" + Math.floor( ( Math.random() * 10 ) % 10 );
 			}
@@ -1036,9 +1035,6 @@ class ANNLab extends Object {
 
 			MuTAt3 += this.crossoverFunction.crossover( partA, partB );
 
-			// MuTAt3 += this.uniformCrossover( partA, partB );
-			//  MuTAt3 += this.pointCrossover( partA, partB );
-			// MuTAt3 += this.kPointCrossover(4, partA, partB );
 		}
 
 		agentA.dna = dnaA;
@@ -1047,63 +1043,6 @@ class ANNLab extends Object {
 		return MuTAt3;
 	};
 
-	kPointCrossover ( k, dnaA, dnaB ) {
-		let MuTAt3 = 0;
-		for ( let i = 0; i < k; i++ ) {
-			MuTAt3 += this.pointCrossover( dnaA, dnaB );
-		}
-
-		return MuTAt3;
-	};
-
-	pointCrossover ( dnaA, dnaB ) {
-		const p = Math.floor( Math.random() * dnaA.length );
-
-		let MuTAt3 = 0;
-
-		for ( let i = p; i < dnaA.length; i++ ) {
-			if ( Math.random() <= this.crossoverChance ) {
-				const tmp = dnaA[i];
-				dnaA[ i ] = dnaB[ i ];
-				dnaB[ i ] = tmp;
-			}
-			if ( Math.random() <= this.mutationChance ) {
-				MuTAt3++;
-				if ( Math.random() < 0.5 ) {
-					dnaA[ i ] = Math.round( dnaA[ i ] * Math.random() );
-				} else {
-					dnaB[ i ] = Math.round( dnaB[ i ] * Math.random() );
-				}
-				// console.warn("MuTAt3!")
-			}
-		}
-		return MuTAt3;
-	};
-
-	uniformCrossover ( dnaA, dnaB ) {
-
-		const rn = randomNumbers( this.crossoverCount, 0, dnaA.length );
-
-		let MuTAt3 = 0;
-
-		for ( let i of rn ) {
-			if ( Math.random() <= this.crossoverChance ) {
-				const tmp = dnaA[ i ];
-				dnaA[ i ] = dnaB[ i ];
-				dnaB[ i ] = tmp;
-			}
-			if ( Math.random() <= this.mutationChance ) {
-				MuTAt3++;
-				if ( Math.random() < 0.5 ) {
-					dnaA[ i ] = Math.round( dnaA[ i ] * Math.random() );
-				} else {
-					dnaB[ i ] = Math.round( dnaB[ i ] * Math.random() );
-				}
-				// console.warn("MuTAt3!")
-			}
-		}
-		return MuTAt3;
-	};
 
 	incarnateProtoAgent () {
 		console.log( this.node.protoDiv );
