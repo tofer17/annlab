@@ -253,8 +253,10 @@ class Neuron extends Object {
 	constructor ( id, activatorName, bias ) {
 		super();
 
+		this.id = id;
+
 		this.bias = bias != null ? bias : Math.random();
-		this.lastOutput = 0.0;
+		this.lastOutput = null;
 
 		this.isInput = false;
 		this.isElite = false;
@@ -266,18 +268,33 @@ class Neuron extends Object {
 		this.activator = Activator.forName( this.activatorName );
 		this.outputs = [];
 
+		this.dnarr = null;
 		this.padding = 19;
 	};
 
-	get dna () {
-		let dna = [ numberToDNA( this.bias, this.padding ) ];
-		for ( let weight of this.weights ) {
-			dna.push( numberToDNA( weight, this.padding ) );
+	prepareRun ( bias ) {
+		this.lastOutput = null;
+		if ( bias != null ) {
+			this.bias = bias;
 		}
-		return dna;
+	}
+
+	get dna () {
+
+		if ( this.dnarr == null ) {
+
+			this.dnarr = [ numberToDNA( this.bias, this.padding ) ];
+
+			for ( let weight of this.weights ) {
+				this.dnarr.push( numberToDNA( weight, this.padding ) );
+			}
+		}
+
+		return this.dnarr;
 	};
 
 	set dna ( dna ) {
+
 		this.bias = dnaToNumber( dna[0] );
 		dna.shift();
 
@@ -285,10 +302,16 @@ class Neuron extends Object {
 			this.weights[i] = dnaToNumber( dna[ 0 ] );
 			dna.shift()
 		}
+
+		this.dnarr = null;
 	};
 
 	get output () {
-		this.lastOutput = this.activator.activate( this );
+
+		if ( this.lastOutput == null ) {
+			this.lastOutput = this.activator.activate( this );
+		}
+
 		return this.lastOutput;
 	};
 
@@ -329,7 +352,9 @@ class Agent extends Object {
 
 		for ( let layer of this.layers ) {
 			for ( let neuron of layer ) {
-				dna.push( ...neuron.dna );
+				if ( ! neuron.isInput ) {
+					dna.push( ...neuron.dna );
+				}
 			}
 		}
 
@@ -339,12 +364,26 @@ class Agent extends Object {
 	set dna ( dna ) {
 		for ( let layer of this.layers ) {
 			for ( let neuron of layer ) {
-				neuron.dna = dna;
+				if ( ! neuron.isInput ) {
+					neuron.dna = dna;
+				}
 			}
 		}
 
 		this.gen++;
 	};
+
+	prepareRun ( inputValues ) {
+		for ( let i = 0; i < inputValues.length; i++ ) {
+			this.layers[ 0 ][ i ].prepareRun( inputValues[ i ] );
+		}
+
+		for ( let i = 1; i < this.layers.length; i++ ) {
+			for ( let neuron of this.layers[ i ] ) {
+				neuron.prepareRun();
+			}
+		}
+	}
 
 	get output () {
 		const ret = [];
@@ -448,6 +487,7 @@ class Agent extends Object {
 				activatorName,
 				bias != null ? bias[ i ] : null
 			);
+			neuron.isInput = layerIndex == 0;
 
 			layer.push( neuron );
 		}
@@ -832,7 +872,26 @@ class ANNLab extends Object {
 
 		const div = this._node.querySelector( "pre" );
 		div.innerHTML = this.runs + "\n" + run + "\nMuTAt3 " + MuTAt3;
-	}
+	};
+
+
+	run () {
+
+		const inputBiases = this.protoAgent.inputBiases;
+		for ( let agent of this.agents ) {
+			//agent.inputBiases = inputBiases;
+			agent.prepareRun( inputBiases );
+		}
+
+		const runResult = this.fitnessFunction.scorePopulation( this.agents, this.protoAgent.outputBiases );
+
+		this.runs ++;
+
+		return [ [ runResult.best.lastScore, runResult.worst.lastScore ],
+			[ runResult.lowest.lastScore, runResult.highest.lastScore ],
+			[ runResult.start, runResult.end, runResult.run ] ];
+	};
+
 
 	copulate ( agentA, agentB ) {
 
@@ -914,21 +973,6 @@ class ANNLab extends Object {
 		return MuTAt3;
 	};
 
-	run () {
-
-		const inputBiases = this.protoAgent.inputBiases;
-		for ( let agent of this.agents ) {
-			agent.inputBiases = inputBiases;
-		}
-
-		const runResult = this.fitnessFunction.scorePopulation( this.agents, this.protoAgent.outputBiases );
-
-		this.runs ++;
-
-		return [ [ runResult.best.lastScore, runResult.worst.lastScore ],
-			[ runResult.lowest.lastScore, runResult.highest.lastScore ],
-			[ runResult.start, runResult.end, runResult.run ] ];
-	};
 
 	incarnateProtoAgent () {
 		console.log( this.node.protoDiv );
