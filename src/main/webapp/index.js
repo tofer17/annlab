@@ -778,7 +778,7 @@ class CrossoverFunction extends SingletonObject {
 			}
 
 			if ( this.opts.mutationFunction != null ) {
-				this.opts.mutationFunction.mutate( dnaA, dnaB );
+				MuTAt3 += this.opts.mutationFunction.mutate( i, dnaA, dnaB );
 			}
 		}
 
@@ -819,7 +819,7 @@ class KPointCrossoverFunction extends CrossoverFunction {
 			}
 
 			if ( this.opts.mutationFunction != null ) {
-				this.opts.mutationFunction.mutate( dnaA, dnaB );
+				MuTAt3 += this.opts.mutationFunction.mutate( i, dnaA, dnaB );
 			}
 		}
 
@@ -827,14 +827,60 @@ class KPointCrossoverFunction extends CrossoverFunction {
 	};
 }
 CrossoverFunction.register( KPointCrossoverFunction );
-x
+
 /**
  * The Mutation Function mutates DNA in unimaginable radioactive ways.
  */
 class MutationFunction extends SingletonObject {
+	constructor () {
+		super();
+
+		this.opts = {};
+		this.opts.chance = 0.0;
+	};
+
+	mutate ( index, dnaA, dnaB ) {
+
+		if ( Math.random() <= this.opts.chance ) {
+
+			if ( Math.random() < 0.5 ) {
+				dnaA[ index ] = "" + Math.round( dnaA[ index ] * Math.random() );
+			} else {
+				dnaB[ index ] = "" + Math.round( dnaB[ index ] * Math.random() );
+			}
+
+			return 1;
+		}
+
+		return 0;
+	};
+
 }
 MutationFunction.register( MutationFunction );
 
+
+class AggressiveMutationFunction extends MutationFunction {
+	constructor () {
+		super();
+	};
+
+	mutate ( index, dnaA, dnaB ) {
+		if ( Math.random() <= this.opts.chance ) {
+
+			if ( Math.random() < 0.5 ) {
+				dnaA[ index ] = "" + Math.floor( ( Math.random() * 10 ) % 10 );
+		console.log( dnaA[index] );
+			} else {
+				dnaB[ index ] = "" + Math.floor( ( Math.random() * 10 ) % 10 );
+			}
+
+			return 1;
+		}
+
+		return 0;
+	}
+}
+MutationFunction.register( AggressiveMutationFunction );
 
 /**
  * The Breeding Function actually performs the breeding steps of crossover and mutation to produce 1 or more offspring.
@@ -871,7 +917,7 @@ class ANNLab extends Object {
 		this.elitismFunction = ElitismFunction.forName();
 
 		this.crossoverFunction = CrossoverFunction.forName( "KPointCrossoverFunction" );
-		this.mutationFunction = null;
+		this.mutationFunction = MutationFunction.forName( "AggressiveMutationFunction" );
 
 		this.protoAgent = new Agent( "P" )
 			.addLayer( 2, "Activator", [ 0.2, 0.5 ] )//x x
@@ -924,6 +970,7 @@ class ANNLab extends Object {
 		this.crossoverFunction.opts.k = 2;
 		this.crossoverFunction.opts.mutationFunction = this.mutationFunction;
 
+		this.mutationFunction.opts.chance = this.mutationChance;
 
 		Promise.resolve().then( ()=>{
 			for ( i = 0; i < n; i ++ ) {
