@@ -1057,13 +1057,11 @@ class ANNLab extends Object {
 		const runResult = this.fitnessFunction.scorePopulation( this.agents, this.protoAgent.outputBiases );
 
 		this.sortingFunction.sort( this.agents, {} );
-//console.log( this.agents.length, newGen.length );
 
 		this.elitismFunction.promote( this.agents, { count : this.elites } );
 
 
 		this.elitismFunction.replicate( this.agents, newGen, {} );
-//console.log( this.agents.length, newGen.length );
 
 		this.selectionFunction.select( this.agents, { percentage : 0.75 } );
 
@@ -1072,15 +1070,12 @@ class ANNLab extends Object {
 		for ( let bed of beds ) {
 			this.breedingFunction.breed( bed, newGen, this.crossoverFunction );
 		}
-//console.log( this.agents.length, newGen.length );
+
 		this.elitismFunction.salvate( this.agents, newGen, {} );
 
-//console.log( this.agents.length, newGen.length );
 		this.cullingFunction.cull( this.agents, { count : 20 } );
 
-//console.log( this.agents.length, newGen.length );
 		this.agents.addFrom( newGen );
-//console.log( this.agents.length, newGen.length );
 
 		let MuTAt3 = 0;
 		this.runs ++;
@@ -1312,6 +1307,12 @@ class ANNLab extends Object {
 		node.mutateBias = node.querySelector( "#mutateBias" );
 		node.mutateBias.disabled = true;
 
+		node.reset = node.querySelector ( "#reset" );
+		node.reset.addEventListener( "click", (e)=>{this.dirtyProto();});
+
+		node.run = node.querySelector( "#run" );
+		node.run.disabled = true;
+
 		node.step1 = node.querySelector( "#step1" );
 		node.step1.addEventListener( "click", (e)=>{
 			//Promise.resolve().then( (e)=>{this.runGens( 1 ); });
@@ -1339,6 +1340,10 @@ class ANNLab extends Object {
 		return this._node;
 	};
 
+	dirtyProto () {
+		this.protoAgent.isDirty = true;
+	};
+
 	updateProtoDiv ( div ) {
 		div.innerHTML = "";
 
@@ -1359,6 +1364,14 @@ class ANNLab extends Object {
 		hr.classList.add( "clr" );
 
 		div.appendChild( hr );
+
+		for ( let el of div.querySelectorAll( "input" ) ) {
+			el.addEventListener( "change", (e)=>{this.dirtyProto();});
+		}
+
+		for ( let el of div.querySelectorAll( "select" ) ) {
+			el.addEventListener( "change", (e)=>{this.dirtyProto();});
+		}
 
 	};
 
@@ -1397,6 +1410,7 @@ class ANNLab extends Object {
 		inp.id = "biases";
 		inp.style.width = "8em";
 		inp.value = "0.7";
+
 
 		div.appendChild( span );
 		div.appendChild( count );
