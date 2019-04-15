@@ -592,7 +592,7 @@ class ElitismFunction extends SingletonObject {
 	/**
 	 * Marks agents that meet the criteria as elites; returns an array.
 	 */
-	promotion ( population, criteria ) {
+	promote ( population, criteria ) {
 		const ret = [];
 		for ( let agent of population ) {
 			// FIXME: "2" is hardcoded and needs to adhere to criteria given.
@@ -608,7 +608,7 @@ class ElitismFunction extends SingletonObject {
 	/**
 	 * Replicates (clones) elites in the population according to the criteria; returns an array with the new replicants (agents).
 	 */
-	replication ( population, criteria ) {
+	replicate ( population, criteria ) {
 		const ret = [];
 		for ( let agent of population ) {
 			if ( agent.isElite ) {
@@ -622,7 +622,7 @@ class ElitismFunction extends SingletonObject {
 	/**
 	 * Removes elites that meet the criteria from the population and returns them in a new array.
 	 */
-	salvation ( population, criteria ) {
+	salvate ( population, criteria ) {
 		// FIXME: This does absolutely nothing at all whatsoever.
 		return [];
 	};
@@ -919,45 +919,25 @@ class ANNLab extends Object {
 		this.mutationFunction = MutationFunction.forName( "AggressiveMutationFunction" );
 
 		this.protoAgent = new Agent( "P" )
-			.addLayer( 2, "Activator", [ 0.2, 0.5 ] )//x x
+			.addLayer( 2, "Activator", [ 0.2, 0.5 ] )
 			.addLayer( 4, "SigmoidActivator", null, 1 )
 			.addLayer( 3 )
 			.addLayer( 1, "SigmoidActivator", [ 0.7 ] );
 
 		//this.target = [ 0.7 ];
 
-		this.agents = [];
-		for ( let i = 0; i < this.agentCount; i++ ) {
-			this.agents.push( this.protoAgent.replicate( i ) );
-//			const agent = new Agent( i );
-//			this.agents.push( agent );
-//
-//			agent.addLayer( 2, "Activator" );
-//			agent.addLayer( 4, "SigmoidActivator" );
-//			agent.addLayer( 3 );
-//			agent.addLayer( 1, "SigmoidActivator" );
-		}
-
-		if ( 1 == 2 ) {
-			console.log( this.agents[0] );
-			var dna = this.agents[0].dna;
-			console.log( dna );
-			console.log( this.agents[0].output, this.agents[1].output );
-
-			this.agents[1].dna = dna;
-			console.log( this.agents[1].dna );
-			console.log( this.agents[0].output, this.agents[1].output );
-			return;
-		}
+		this.agents;
 
 	};
 
 	runGens ( n = 100 ) {
 		this.incarnateProtoAgent();
-		this.agents = [];
+		//this.agents = [];
+		this.agents = new LinkedList();
 
 		for ( let i = 0; i < this.agentCount; i++ ) {
-			this.agents.push( this.protoAgent.replicate( i ) );
+			//this.agents.push( this.protoAgent.replicate( i ) );
+			this.agents.add( this.protoAgent.replicate( i ) );
 		}
 
 		this.node.progress.value = 0;
@@ -988,17 +968,44 @@ class ANNLab extends Object {
 
 		let MuTAt3 = 0;
 
-		for ( let i = this.elites; i < this.agents.length; i += 2 ) {
-			if ( i + 1 < this.agents.length ) {
-				const agentA = this.agents[ i ];
-				if ( agentA.lastScore <= this.breedScore ) {
-					i--;
-					continue;
-				}
-				const agentB = this.agents[ i + 1 ];
-				MuTAt3 += this.copulate( agentA, agentB );
+		const iterable = this.agents.values();
+		let agentA = null;
+		let agentB = null;
+
+		for ( let agent of iterable ) {
+			if ( agent.isElite || agent.lastScore <= this.breedScore ) {
+				//console.warn("Elite", agent);
+				continue;
 			}
+
+			if ( agentA == null ) {
+				agentA = agent;
+			} else if ( agentB == null ) {
+				agentB = agent;
+
+				MuTAt3 += this.copulate( agentA, agentB );
+
+				agentA = null;
+				agentB = null;
+			}
+
 		}
+
+
+//		for ( let i = this.elites; i < this.agents.length; i += 2 ) {
+//			if ( i + 1 < this.agents.length ) {
+//				// FIXME: iterate using .next()...
+//				//const agentA = this.agents[ i ];
+//				const agentA = this.agents.get( i );
+//				if ( agentA.lastScore <= this.breedScore ) {
+//					i--;
+//					continue;
+//				}
+//				//const agentB = this.agents[ i + 1 ];
+//				const agentB = this.agents.get( i + 1 );
+//				MuTAt3 += this.copulate( agentA, agentB );
+//			}
+//		}
 
 		const div = this._node.querySelector( "pre" );
 		div.innerHTML = this.runs + "\n" + run + "\nMuTAt3 " + MuTAt3;
@@ -1013,6 +1020,8 @@ class ANNLab extends Object {
 		}
 
 		const runResult = this.fitnessFunction.scorePopulation( this.agents, this.protoAgent.outputBiases );
+
+		this.elitismFunction.promote( this.agents, {} );
 
 		this.runs ++;
 
