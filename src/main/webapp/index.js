@@ -593,38 +593,41 @@ class ElitismFunction extends SingletonObject {
 	 * Marks agents that meet the criteria as elites; returns an array.
 	 */
 	promote ( population, criteria ) {
-		const ret = [];
+
+		let index = 0;
 		for ( let agent of population ) {
-			// FIXME: "2" is hardcoded and needs to adhere to criteria given.
-			if ( ret.length < 2 ) {
-				ret.push( agent );
-				agent.isElite = true;
-			}
+			agent.isElite = index++ < criteria.count;
 		}
 
-		return ret;
+		return {};
 	};
 
 	/**
 	 * Replicates (clones) elites in the population according to the criteria; returns an array with the new replicants (agents).
 	 */
-	replicate ( population, criteria ) {
-		const ret = [];
+	replicate ( population, newGen, criteria ) {
+
 		for ( let agent of population ) {
 			if ( agent.isElite ) {
-				; // FIXME: do something.
+				newGen.add( agent.replicate() );
 			}
 		}
 
-		return ret;
+		return {};
 	};
 
 	/**
 	 * Removes elites that meet the criteria from the population and returns them in a new array.
 	 */
-	salvate ( population, criteria ) {
-		// FIXME: This does absolutely nothing at all whatsoever.
-		return [];
+	salvate ( population, newGen, criteria ) {
+		//x x
+		for ( let agent of population ) {
+			if ( agent.isElite ) {
+				newGen.add( population.removeValue( agent ) );
+			}
+		}
+
+		return {};
 	};
 
 }
@@ -689,16 +692,20 @@ class TopPercentileSelectionFunction extends SingletonObject {
 		}
 
 		const cut = Math.round( population.length * criteria.percentage );
-		const ret = new Array( cut );
 
-		for ( let i = 0; i < population.length; i++ ) {
-			population[i].isSelected = i <= cut;
-			if ( i <= cut ) {
-				ret.push( population[i] );
-			}
+		let index = 0;
+		for ( let agent of population ) {
+			agent.isSelected = index <= cut;
+			index++;
 		}
 
-		return ret;
+//		for ( let i = 0; i < population.length; i++ ) {
+//			population[i].isSelected = i <= cut;
+//			if ( i <= cut ) {
+//				ret.push( population[i] );
+//			}
+//		}
+
 	};
 }
 SelectionFunction.register( TopPercentileSelectionFunction );
@@ -708,15 +715,16 @@ SelectionFunction.register( TopPercentileSelectionFunction );
  */
 class BeddingFunction extends SingletonObject {
 
-	static canBed ( i, n, population ) {
-		for ( i; i < i + n; i++ ) {
-			if ( !popultion[ i ].isSelected ) {
+	static XcanBed ( i, n, population ) {
+
+		for ( ; i < i + n; i++ ) {
+			if ( !population.get( i ).isSelected ) {
 				return false;
 			}
 		}
 	};
 
-	bedPopulation ( population, criteria ) {
+	XbedPopulation ( population, criteria ) {
 
 		if ( criteria == null || criteria.count == null ) {
 			criteria = { count : 2 };
@@ -730,7 +738,7 @@ class BeddingFunction extends SingletonObject {
 				const bed = [];
 
 				for ( let j = i; j < i + criteria.count; j++ ) {
-					bed.push( population[ j ] );
+					bed.push( population.get( j ) );
 				}
 
 				ret.push( bed );
@@ -738,6 +746,28 @@ class BeddingFunction extends SingletonObject {
 		}
 
 		return ret;
+	}
+
+
+	static canBed ( parent ) {
+		return parent.isSelected;
+	};
+
+	bedPopulation ( population, criteria ) {
+		const beds = new LinkedList();
+
+		let parentA = null;
+
+		for ( let agent of population.values() ) {
+			if ( BeddingFunction.canBed( agent ) && parentA == null ) {
+				parentA = agent;
+			} else if ( BeddingFunction.canBed( agent ) && parentA != null ) {
+				beds.add( [ parentA, agent ] );
+				parentA = null;
+			}
+		}
+
+		return beds;
 	}
 }
 BeddingFunction.register( BeddingFunction );
@@ -886,6 +916,36 @@ MutationFunction.register( AggressiveMutationFunction );
  * The differential has to do with how many offspring to produce.
  */
 class BreedingFunction extends SingletonObject {
+	breed ( parents, newGen, crossoverFunction ) {
+
+		let agentA = parents[0];
+		let agentB = parents[1];
+
+		let dnaA = agentA.dna;
+		let dnaB = agentB.dna;
+
+		let MuTAt3 = 0;
+
+		for ( let i = 0; i < dnaA.length; i++ ) {
+			let partA = dnaA[ i ];
+			let partB = dnaB[ i ];
+
+			MuTAt3 += crossoverFunction.crossover( partA, partB );
+
+		}
+
+		let childA = agentA.replicate( agentA.id );
+		childA.dna = dnaA;
+		newGen.add( childA );
+
+		if ( 1 == 1 ) {
+			let childB = agentB.replicate( agentB.id );
+			childB.dna = dnaB;
+			newGen.add( childB );
+		}
+
+		return MuTAt3;
+	}
 }
 BreedingFunction.register( BreedingFunction );
 
@@ -893,6 +953,20 @@ BreedingFunction.register( BreedingFunction );
  * The Culling Function tears through the population and kills off agents based on gruesome criteria.
  */
 class CullingFunction extends SingletonObject {
+	cull ( population, criteria ) {
+		if ( criteria == null ) {
+			criteria = {};
+			criteria.count = 50;
+		} else if ( criteria.count == null ) {
+			criteria.count = 50;
+		}
+
+		const tail = population.getNode( criteria.count - 1 );
+		tail.next = null;
+		population.tail = tail;
+		population.length = criteria.count;
+
+	};
 }
 CullingFunction.register( CullingFunction );
 
@@ -914,9 +988,15 @@ class ANNLab extends Object {
 		this.sortingFunction = SortingFunction.forName();
 		this.fitnessFunction = FitnessFunction.forName();
 		this.elitismFunction = ElitismFunction.forName();
+		this.selectionFunction = SelectionFunction.forName( "TopPercentileSelectionFunction" );
+		this.beddingFunction = BeddingFunction.forName();
 
 		this.crossoverFunction = CrossoverFunction.forName( "KPointCrossoverFunction" );
 		this.mutationFunction = MutationFunction.forName( "AggressiveMutationFunction" );
+
+		this.breedingFunction = BreedingFunction.forName();
+
+		this.cullingFunction = CullingFunction.forName();
 
 		this.protoAgent = new Agent( "P" )
 			.addLayer( 2, "Activator", [ 0.2, 0.5 ] )
@@ -924,11 +1004,97 @@ class ANNLab extends Object {
 			.addLayer( 3 )
 			.addLayer( 1, "SigmoidActivator", [ 0.7 ] );
 
+		this.protoAgent.isDirty = true;
+
 		//this.target = [ 0.7 ];
 
 		this.agents;
 
 	};
+
+	iterate ( n = 100 ) {
+		if ( this.protoAgent.isDirty ) {
+
+			this.crossoverFunction.opts.count = this.crossoverCount;
+			this.crossoverFunction.opts.chance = this.crossoverChance;
+			this.crossoverFunction.opts.k = 2;
+			this.crossoverFunction.opts.mutationFunction = this.mutationFunction;
+
+			this.mutationFunction.opts.chance = this.mutationChance;
+
+			this.incarnateProtoAgent();
+			this.agents = new LinkedList();
+
+			for ( let i = 0; i < this.agentCount; i++ ) {
+				this.agents.add( this.protoAgent.replicate( i ) );
+			}
+
+			// reset stats...
+			this.runs = 0;
+		}
+
+		this.node.progress.value = 0;
+		this.node.progress.max = n;
+
+		for ( let i = 0; i < n; i++ ) {
+			Promise.resolve().then(
+				() => {
+					setTimeout( this.batch.bind( this ), 0 );
+				}
+			);
+		}
+
+	};
+
+	batch () {
+		this.node.progress.value++;
+
+		for ( let agent of this.agents ) {
+			agent.prepareRun( this.protoAgent.inputBiases );
+		}
+
+		const newGen = new LinkedList();
+		const runResult = this.fitnessFunction.scorePopulation( this.agents, this.protoAgent.outputBiases );
+
+		this.sortingFunction.sort( this.agents, {} );
+//console.log( this.agents.length, newGen.length );
+
+		this.elitismFunction.promote( this.agents, { count : this.elites } );
+
+
+		this.elitismFunction.replicate( this.agents, newGen, {} );
+//console.log( this.agents.length, newGen.length );
+
+		this.selectionFunction.select( this.agents, { percentage : 0.75 } );
+
+		const beds = this.beddingFunction.bedPopulation( this.agents, { count : 2 } );
+
+		for ( let bed of beds ) {
+			this.breedingFunction.breed( bed, newGen, this.crossoverFunction );
+		}
+//console.log( this.agents.length, newGen.length );
+		this.elitismFunction.salvate( this.agents, newGen, {} );
+
+//console.log( this.agents.length, newGen.length );
+		this.cullingFunction.cull( this.agents, { count : 20 } );
+
+//console.log( this.agents.length, newGen.length );
+		this.agents.addFrom( newGen );
+//console.log( this.agents.length, newGen.length );
+
+		let MuTAt3 = 0;
+		this.runs ++;
+		const div = this._node.querySelector( "pre" );
+		div.innerHTML = this.runs + "\n" +
+			runResult.best.lastScore +
+			" of " + this.agents.length +
+			" in " +
+			(runResult.end - runResult.start) + " ms"
+
+		+ "\nMuTAt3 " + MuTAt3;
+
+	}
+
 
 	runGens ( n = 100 ) {
 		this.incarnateProtoAgent();
@@ -1148,17 +1314,20 @@ class ANNLab extends Object {
 
 		node.step1 = node.querySelector( "#step1" );
 		node.step1.addEventListener( "click", (e)=>{
-			Promise.resolve().then( (e)=>{this.runGens( 1 ); });
+			//Promise.resolve().then( (e)=>{this.runGens( 1 ); });
+			Promise.resolve().then( (e)=>{this.iterate( 1 ); });
 		});
 
 		node.step100 = node.querySelector( "#step100" );
 		node.step100.addEventListener( "click", (e)=>{
-			Promise.resolve().then( (e)=>{this.runGens( 100 ); });
+			//Promise.resolve().then( (e)=>{this.runGens( 100 ); });
+			Promise.resolve().then( (e)=>{this.iterate( 100 ); });
 		});
 
 		node.step1000 = node.querySelector( "#step1000" );
 		node.step1000.addEventListener( "click", (e)=>{
-			Promise.resolve().then( (e)=>{this.runGens( 1000 ); });
+			//Promise.resolve().then( (e)=>{this.runGens( 1000 ); });
+			Promise.resolve().then( (e)=>{this.iterate( 1000 ); });
 		});
 
 		node.progress = node.querySelector( "progress" );
