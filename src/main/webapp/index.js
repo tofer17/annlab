@@ -1295,7 +1295,7 @@ class ANNLab extends Object {
 		node.rolls = node.querySelectorAll( "h2 span" );
 		for ( let roll of node.rolls ) {
 			roll.addEventListener( "click", (e)=>{
-				const d = e.target.parentElement.nextSibling;
+				const d = e.target.parentElement.nextElementSibling;
 				d.style.display = d.style.display == "none" ? "" : "none";
 				e.target.innerHTML = d.style.display == "none" ? "[ + ]" : "[ - ]";
 			});
