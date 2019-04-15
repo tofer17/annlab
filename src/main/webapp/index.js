@@ -1378,6 +1378,301 @@ class ANNLab extends Object {
 }
 
 
+class LinkedListNode extends Object {
+	constructor ( value, next ) {
+		super();
+		this.value = value;
+		this.next = next;
+	};
+}
+
+
+class LinkedList extends Object {
+	constructor ( ...values ) {
+		super();
+		this.head = null;
+		this.tail = null;
+		this.length = 0;
+
+		Object.defineProperty( this, "back", { value : [] } );
+
+		if ( values != null ) {
+			this.addAll( ...values );
+		}
+	};
+
+	/**
+	 * "Clears" the backing array in a kind'a expensive way.
+	 */
+	shrink () {
+		while ( this.back.length > 0 ) {
+			this.back.pop();
+		}
+	};
+
+	add ( value ) {
+
+		const node = new LinkedListNode( value );
+
+		if ( this.head == null ) {
+			this.head = node;
+			this.tail = node;
+		} else {
+			this.tail.next = node;
+			this.tail = node;
+		}
+
+		this.length++;
+		return this;
+	};
+
+	addAll ( ...values ) {
+
+		for ( let value of values ) {
+			this.add( value );
+		}
+
+		return this;
+	};
+
+	addFrom ( iterable ) {
+		for ( let value of iterable ) {
+			this.add( value );
+		}
+
+		return this;
+	}
+
+	insert ( value, index = 0 ) {
+
+		if ( ( index > 0 ) && ( index < this.length ) ) {
+
+			const newNode = new LinkedListNode( value );
+			const node = this.getNode(  index - 1 );
+
+			newNode.next = node.next;
+			node.next = newNode;
+
+			if ( newNode.next == null ) {
+				this.tail = newNode;
+			}
+
+			this.length++;
+			return this;
+		} if ( index == 0 ) {
+
+			const newNode = new LinkedListNode ( value );
+
+			newNode.next = this.head;
+
+			this.head = newNode;
+
+			if ( newNode.next == null ) {
+				this.tail = newNode;
+			}
+
+			this.length++;
+			return this;
+		} else {
+			throw new RangeError( "Invalid index range: " + index );
+		}
+	};
+
+	getNode ( index = 0 ) {
+		if ( ( index > -1 ) && ( index < this.length ) ) {
+
+			let current = this.head;
+			let i = 0;
+
+			while ( ( current != null ) && ( i < index ) ) {
+				current = current.next;
+				i++;
+			}
+
+			return current;
+		} else {
+			throw new RangeError( "Invalid index range: " + index );
+		}
+	};
+
+	get ( index ) {
+
+		if ( index && index < 0 ) {
+			index += this.length;
+		}
+
+		return this.getNode( index ).value;
+	};
+
+	set ( value, index ) {
+
+		const node = this.getNode( index );
+		const ret = node.value;
+
+		node.value = value;
+
+		return ret;
+	};
+
+	remove ( index ) {
+		if ( ( this.head != null ) && ( index > -1 ) && ( index < this.length ) ) {
+			if ( index == 0 ) {
+				const node = this.head;
+				this.head = this.head.next;
+
+				if ( this.head == null ) {
+					this.tail = null;
+				}
+
+				this.length--;
+				return node.value;
+			} else {
+				let current = this.head;
+				let previous = null;
+				let i = 0;
+
+				while ( ( current != null ) && ( i < index ) ) {
+					previous = current;
+					current = current.next;
+					i++;
+				}
+
+				if ( current != null ) {
+					previous.next = current.next;
+
+					if ( previous.next == null ) {
+						this.tail = previous;
+					}
+
+					this.length--;
+					return current.value;
+				}
+			}
+		} else {
+			throw new RangeError( "Invalid index range: " + index );
+		}
+	};
+
+	pop () {
+		return this.remove( this.length - 1 );
+	};
+
+	removeValue ( value ) {
+
+		const index = this.indexOf( value );
+
+		if ( index > -1 ) {
+			return this.remove( index );
+		}
+	};
+
+	indexOf ( value ) {
+		let i = 0;
+
+		let current = this.head;
+
+		while ( current != null ) {
+			if ( current.value == value ) {
+				return i;
+			}
+
+			current = current.next;
+			i++;
+		}
+
+		return -1;
+	};
+
+	contains ( value ) {
+		return this.indexOf( value ) > -1;
+	};
+
+	* values () {
+		let current = this.head;
+		while ( current != null ) {
+			yield current.value;
+			current = current.next;
+		}
+	};
+
+	[Symbol.iterator] () {
+		return this.values();
+	};
+
+	toArray ( dest, offset, count ) {
+
+		if ( offset == null ) {
+			offset = 0;
+		} else if ( offset < 0 || offset > this.length ) {
+			throw new RangeError( "Invalid offset: " + offset );
+		}
+
+		if ( count == null ) {
+			count = dest == null ? this.length : dest.length;
+		} else if ( count < 0 || offset + count > this.length ) {
+			throw new RangeError( "Invalid count: " + count );
+		}
+
+		if ( dest == this.back && dest.length < count ) {
+			dest.concat( new Array( count - dest.length ) );
+		} else if ( dest == null ) {
+			dest = new Array( count );
+		} else if ( dest.length < count ) {
+			throw new RangeError ("Destination array is too small: " + this.length + " > " + dest.length );
+		}
+
+		let index = 0;
+		const end = offset + count;
+
+		for ( let value of this.values() ) {
+
+			if ( index >= offset && index < end ) {
+				dest[ index - offset ] = value;
+			}
+
+			index++;
+
+			if ( index >= end ) {
+				break;
+			}
+		}
+
+		return dest;
+	};
+
+	sort ( compareFunction ) {
+
+		const sorted = this.toArray( this.back, 0, this.length ).sort( compareFunction );
+
+		for ( let i = 0; i < this.length; i++ ) {
+			this.set( sorted[ i ], i );
+		}
+
+		return this;
+	};
+
+	toString ( full ) {
+
+		let s = full == true ? "(" + this.length + ") " : "";
+
+		let current = this.head;
+
+		while ( current != null ) {
+			s += ( current != this.head ? "," : "" ) + current.value;
+			current = current.next;
+		}
+
+		if ( full == true ) {
+			s += " [" + ( this.tail != null ? this.tail.value : "" ) + "]";
+		}
+
+		return s;
+	};
+}
+
+
+
+
 function load ( event ) {
 	window.annlab = new ANNLab();
 	document.body.appendChild( window.annlab.node );
