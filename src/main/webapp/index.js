@@ -123,7 +123,39 @@ class SingletonObject extends Object {
 
 	get displayName () {
 		return this.name || this.constructor.name;
-	}
+	};
+
+	static populateSelect ( sel, selectedInstance ) {
+		const instanceNames = [];
+
+		for ( let instanceName in this.instance ) {
+			if ( instanceName != "defaultInstance" ) {
+				instanceNames.push( instanceName );
+			}
+		}
+
+		instanceNames.sort();
+
+		if ( sel == null ) {
+			sel = document.createElement( "select" );
+		}
+
+		for ( let instanceName of instanceNames ) {
+			const opt = document.createElement( "option" );
+			opt.value = instanceName;
+			opt.innerHTML = this.forName( instanceName ).displayName;
+			opt.selected = instanceName == selectedInstance;
+			sel.add( opt );
+		}
+
+		return sel;
+	};
+
+	static makeSelectElement () {
+		const sel = document.createElement( "select" );
+
+		return sel;
+	};
 
 	static get instance () {
 		if ( ! this.instances ) {
@@ -1289,10 +1321,8 @@ class ANNLab extends Object {
 		node.crossoverChance.addEventListener( "change", (e)=>{ this.crossoverChance = e.target.value / 100.0; } );
 
 		node.crossoverFunction = node.querySelector( "#xoverFunction" );
-		node.crossoverFunction.disabled = true;
-		// node.crossoverFunction.value = "Single"
-		// node.crossoverFunction.addEventListener( "change", (e)=>{
-		// this.crossoverChance = e.target.value/100.0; } );
+		CrossoverFunction.populateSelect( node.crossoverFunction, this.crossoverFunction.constructor.name  );
+		node.crossoverFunction.addEventListener( "change", (e)=>{ this.crossoverFunction = CrossoverFunction.forName( e.target.value);});
 
 		node.crossoverBias = node.querySelector( "#xoverBias" );
 		node.crossoverBias.disabled = true;
