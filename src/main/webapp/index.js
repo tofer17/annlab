@@ -1288,6 +1288,7 @@ class ANNLab extends Object {
 
 	init () {
 		const node = document.getElementById( "annlab" );
+		this._node = node;
 
 		node.appendChild(document.createElement("pre"));
 
@@ -1308,10 +1309,6 @@ class ANNLab extends Object {
 		node.breedScore.value = this.breedScore;
 		node.breedScore.addEventListener( "change", (e)=>{ this.breedScore = parseFloat( e.target.value ); } );
 
-		node.agentCount = node.querySelector( "#agentCount" );
-		node.agentCount.value = this.agentCount;
-		node.agentCount.addEventListener( "change", (e)=>{ this.agentCount = parseInt( e.target.value ); } );
-
 		node.crossoverCount = node.querySelector( "#xoverPercent" );
 		node.crossoverCount.value = 100 * (this.crossoverCount / 20.0 );
 		node.crossoverCount.addEventListener( "change", (e)=>{ this.crossoverCount = Math.round(20.0 * (e.target.value/100.0) ); } );
@@ -1324,8 +1321,8 @@ class ANNLab extends Object {
 		CrossoverFunction.populateSelect( node.crossoverFunction, this.crossoverFunction.constructor.name  );
 		node.crossoverFunction.addEventListener( "change", (e)=>{ this.crossoverFunction = CrossoverFunction.forName( e.target.value);});
 
-		node.crossoverBias = node.querySelector( "#xoverBias" );
-		node.crossoverBias.disabled = true;
+//		node.crossoverBias = node.querySelector( "#xoverBias" );
+//		node.crossoverBias.disabled = true;
 
 		node.mutationChance = node.querySelector( "#mutationChance" );
 		node.mutationChance.value = 100.0 * this.mutationChance;
@@ -1334,8 +1331,8 @@ class ANNLab extends Object {
 		node.mutationFunction = node.querySelector( "#mutationFunction" );
 		node.mutationFunction.disabled = true;
 
-		node.mutateBias = node.querySelector( "#mutateBias" );
-		node.mutateBias.disabled = true;
+//		node.mutateBias = node.querySelector( "#mutateBias" );
+//		node.mutateBias.disabled = true;
 
 		node.reset = node.querySelector ( "#reset" );
 		node.reset.addEventListener( "click", (e)=>{this.dirtyProto();});
@@ -1366,7 +1363,6 @@ class ANNLab extends Object {
 		node.protoDiv = node.querySelector( "#protodiv" );
 		this.updateProtoDiv( node.protoDiv );
 
-		this._node = node;
 		return this._node;
 	};
 
@@ -1375,7 +1371,14 @@ class ANNLab extends Object {
 	};
 
 	updateProtoDiv ( div ) {
+		const ac = div.querySelector( "#agentcountdiv" );
+		this._node.agentCount = div.querySelector( "#agentCount" );
+		this._node.agentCount.value = this.agentCount;
+		this._node.agentCount.addEventListener( "change", (e)=>{ this.agentCount = parseInt( e.target.value ); } );
+
 		div.innerHTML = "";
+
+		div.appendChild( ac );
 
 		div.inputDiv = this.makeInputProto( this.protoAgent );
 		div.appendChild( div.inputDiv );

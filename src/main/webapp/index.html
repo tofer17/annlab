@@ -10,20 +10,31 @@ body {
 	font-size: 0.9em;
 }
 
+#optsdiv h3 {
+	color: gray;
+	border-top: 1px solid black;
+	border-left: 1px solid black;
+	padding-left: 1em;
+}
+
 .opt input, .opt select {
 	width: 5em;
-	float: right;
+	xfloat: right;
 }
 
 .opt {
-	float: left;
+	Xfloat: left;
 	width: 20em;
 	padding: 0px 2px 2px 2px;
 	height: 1.5em;
 }
 
 .opt label {
-	float: left;
+	Xfloat: right;
+	width: 10em;
+	display: inline-block;
+	text-align: right;
+	padding-right: 0.5em;
 }
 
 .clr {
@@ -52,6 +63,12 @@ h2 span {
 	text-align: right;
 	display: inline-block;
 	margin-right: 4px
+}
+
+#agentcountdiv {
+	border-bottom: 1px dashed #bbc;
+	padding-bottom: 4px;
+	margin-bottom: 4px;
 }
 
 #protodiv input, #protodiv select {
@@ -84,56 +101,92 @@ h2 span {
 			Options<span>[ - ]</span>
 		</h2>
 		<div id="optsdiv" class="roll">
-			<div class="opt">
-				<label for="eliteCount">Elites</label><input id="eliteCount"
-					type="number" min="0" />
+			<div class="optgroup">
+				<h3>Fitness Scoring</h3>
 			</div>
-			<div class="opt">
-				<label for="breedScore">Breed Score</label><input id="breedScore"
-					type="number" min="0.0" step="0.1" max="500" />
+			<div class="optgroup">
+				<h3>Sorting</h3>
 			</div>
-			<div class="opt">
+			<div class="optgroup">
+				<h3>Elitism</h3>
+				<div class="opt">
+					<label for="eliteCount">Elites</label><input id="eliteCount"
+						type="number" min="0" />
+				</div>
+				<div class="opt">
+					<label for="elitePercent">Percent</label><input id="elitePercent"
+						type="number" min="0" max="100" />
+				</div>
+			</div>
+			<div class="optgroup">
+				<h3>Selection</h3>
+				<div class="opt">
+					<label for="breedScore">Breed Score</label><input id="breedScore"
+						type="number" min="0.0" step="0.1" max="500" />
+				</div>
+			</div>
+			<div class="optgroup">
+				<h3>Bedding</h3>
+			</div>
+			<div class="optgroup">
+				<h3>Crossover</h3>
+				<div class="opt ">
+					<label for="xoverFunction">Crossover Function</label> <select
+						id="xoverFunction">
+					</select>
+				</div>
+				<div class="opt">
+					<label for="xoverPercent">Crossover Percent</label><input
+						id="xoverPercent" type="number" min="0" max="100" step="10" />
+				</div>
+				<div class="opt">
+					<label for="xoverChance">Crossover Chance</label><input
+						id="xoverChance" type="number" min="0" max="100" step="10" />
+				</div>
+			</div>
+			<div class="optgroup">
+				<h3>Mutation</h3>
+				<div class="opt">
+					<label for="mutationChance">Mutation Chance</label><input
+						id="mutationChance" type="number" min="0" max="100" />
+				</div>
+				<div class="opt">
+					<label for="mutationFunction">Mutation Function</label> <select
+						id="mutationFunction">
+						<option value="subtle">Subtle</option>
+						<option value="random">Random</option>
+					</select>
+				</div>
+			</div>
+			<div class="optgroup">
+				<h3>Breeding</h3>
+			</div>
+			<div class="optgroup">
+				<h3>Culling</h3>
+			</div>
+			<!--<div class="opt">
 				<label for="agentCount">Agents</label><input id="agentCount"
 					type="number" min="2" step="2" />
-			</div>
-			<div class="opt">
-				<label for="xoverPercent">Crossover Percent</label><input
-					id="xoverPercent" type="number" min="0" max="100" step="10" />
-			</div>
-			<div class="opt">
-				<label for="xoverChance">Crossover Chance</label><input
-					id="xoverChance" type="number" min="0" max="100" step="10" />
-			</div>
-			<div class="opt ">
-				<label for="xoverFunction">Crossover Function</label> <select
-					id="xoverFunction">
-				</select>
-			</div>
-			<div class="opt">
+			</div>-->
+			<!--<div class="opt">
 				<label for="xoverBias">Crossover Bias</label><input id="xoverBias"
 					type="checkbox" checked>
 			</div>
 			<div class="opt">
-				<label for="mutationChance">Mutation Chance</label><input
-					id="mutationChance" type="number" min="0" max="100" />
-			</div>
-			<div class="opt">
-				<label for="mutationFunction">Mutation Function</label> <select
-					id="mutationFunction">
-					<option value="subtle">Subtle</option>
-					<option value="random">Random</option>
-				</select>
-			</div>
-			<div class="opt">
 				<label for="mutateBias">Mutate Bias</label><input id="mutateBias"
 					type="checkbox" checked>
-			</div>
+			</div>-->
 			<hr class="clr" />
 		</div>
 		<h2>
 			Prototype<span>[ - ]</span>
 		</h2>
 		<div id="protodiv" class="roll">
+			<div id="agentcountdiv" class="protolayer">
+					<span for="agentCount">Agents</span><input id="agentCount"
+					type="number" min="2" step="2" /><br/>
+			
+			</div>
 			<div class="protolayer">
 				<span>Inputs</span><input type="number" min="1" step="1" value="2" /><select
 					disabled><option>Activator</option></select><input
