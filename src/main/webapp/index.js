@@ -113,6 +113,18 @@ function splitFloats ( value ) {
 	return ret;
 }
 
+function replaceAll ( string, searchValue, replaceValue ) {
+	while ( string.indexOf( searchValue ) >= 0 ) {
+		string = string.replace( searchValue, replaceValue );
+	}
+	
+	return string;
+}
+
+function fixId ( string ) {
+	return replaceAll( replaceAll( string, ".", "\\!" ), "!", "." );
+}
+
 /**
  * SingletonObjects permit a subclass to act like a singleton object.
  */
@@ -663,21 +675,21 @@ class ElitismFunction extends SingletonObject {
 					name: "Minimum Count",
 					help: "",
 					forCriteria: "minCount",
-					type: { type:"int", min:0, step:1, value:1 },
-					nature: "optional-checked"
+					type: { type:"int", min:0, step:1 },
+					nature: "optional"
 				},
 				{
 					name: "Maximum Count",
 					help: "",
 					forCriteria: "maxCount",
-					type: { type:"int", min:0,step:1 },
-					nature: "optional"
+					type: { type:"int", min:0, step:1, value: 2 },
+					nature: "optional-checked"
 				},
 				{
 					name: "Top Percent",
 					help: "",
 					forCriteria: "topPerc",
-					type: { type:"perc", min:0, max:100, step:1, value:10 },
+					type: { type:"perc", min:0, max:100, step:1, value:100 },
 					nature: "exclusive"
 				},
 				{
@@ -970,14 +982,14 @@ class CrossoverFunction extends SingletonObject {
 				help: "",
 				forCriteria: "chance",
 				type: { type:"perc", min:0, max: 100, step:1, value: 90 },
-				nature: "optional-checked"
+				nature: "required"
 			},
 			{
 				name: "Percent",
 				help: "",
 				forCriteria: "count",
 				type: { type:"perc", min:0, max: 100, step:1, value: 50 },
-				nature: "optional-checked"
+				nature: "required"
 			}
 		];
 
@@ -1024,7 +1036,7 @@ class KPointCrossoverFunction extends CrossoverFunction {
 				help: "",
 				forCriteria: "k",
 				type: { type:"int", min:1, step:1, value: 1 },
-				nature: "optional-checked"
+				nature: "required"
 			}
 		];
 
@@ -1138,6 +1150,20 @@ MutationFunction.register( AggressiveMutationFunction );
  * The differential has to do with how many offspring to produce.
  */
 class BreedingFunction extends SingletonObject {
+	constructor () {
+		super();
+		this.name = "Generic";
+		this.options = [
+			{
+				name: "Offspring",
+				help: "",
+				forCriteria: "count",
+				type: { type:"int", min:1, max: 2, step:1, value: 1 },
+				nature: "required"
+			}
+		];
+	};
+	
 	breed ( parents, newGen, crossoverFunction ) {
 
 		let agentA = parents[0];
@@ -1175,6 +1201,24 @@ BreedingFunction.register( BreedingFunction );
  * The Culling Function tears through the population and kills off agents based on gruesome criteria.
  */
 class CullingFunction extends SingletonObject {
+	constructor () {
+		super();
+		
+		this.name = "Lower bounds";
+		
+		this.options = [
+			{
+				name: "Keep top",
+				help: "",
+				forCriteria: "count",
+				type: { type:"int", min:1, step:1, value: 50 },
+				nature: "required"
+			}
+		];
+
+		
+	}
+	
 	cull ( population, criteria ) {
 		if ( criteria == null ) {
 			criteria = {};
@@ -1234,9 +1278,67 @@ class ANNLab extends Object {
 
 	};
 
+	getAllOpts () {
+		const criteria = {};
+		
+		const optsDiv = document.querySelector( "#optsdiv" );
+		const opts = optsDiv.querySelectorAll( "div.opt" );
+		for ( let opt of opts ) {
+			if ( !opt.id ) continue;
+			const optId = opt.id;
+			const fullName = optId.substring( 0, optId.indexOf( "-opt" ) );
+
+			if ( fullName.indexOf( "." ) < 0 ) {
+				// It's the selector
+				const value = opt.querySelector( "select" ).value;
+
+				if ( ! criteria[ fullName ] ) {
+					criteria[ fullName ] = {};
+				}
+				
+				criteria[ fullName ].name = value;
+				
+			} else {
+				const fixedId = fixId( "#" + fullName );
+				const nature = opt.querySelector( fixedId + "-nature" );
+				
+				if ( nature.checked == true ) {
+					const inp = opt.querySelector( fixedId );
+
+					const funcName = fullName.substring( 0, fullName.indexOf( "." ) );
+					const optName = fullName.substring( fullName.indexOf( "." ) + 1 );
+					const subName = optName.indexOf( "." ) < 0  
+						? null
+						: optName.substring( optName.indexOf( "." ) + 1 );
+	
+					if ( subName == null ) {
+
+						criteria[ funcName ][ optName ] = inp.value;
+						
+					} else {
+				//console.log(subName,optName);
+						const grpName = optName.substring( 0, optName.indexOf( "." ) ); 
+						if ( ! criteria[ funcName ][ grpName ] ) {
+							criteria[ funcName ][ grpName ] = {};
+						}
+						criteria[ funcName ][ grpName ][ subName ] = inp.value;
+					}
+				}
+				
+				//console.log(optName, subName);
+			}
+			
+			//console.log( opt.id, fullName );
+			
+		}
+		console.log( criteria );
+	}
+	
 	iterate ( n = 100 ) {
 		if ( this.protoAgent.isDirty ) {
 
+			this.getAllOpts();
+			
 			this.crossoverFunction.opts.count = this.crossoverCount;
 			this.crossoverFunction.opts.chance = this.crossoverChance;
 			this.crossoverFunction.opts.k = 2;
@@ -1491,28 +1593,40 @@ class ANNLab extends Object {
 			});
 		}
 
-		document.body.appendChild(
+		const optsDiv = document.querySelector( "#optsdiv" );
+		//optsDiv.innerHTML = "";
+		for ( let d of optsDiv.querySelectorAll(".optgroup") )d.style.display="none";
+		
+		optsDiv.appendChild(
 				this.makeOptionGroup( "Elitism", ElitismFunction, this.elitismFunction )
 				);
 				
-		document.body.appendChild(
+		optsDiv.appendChild(
 				this.makeOptionGroup( "Fitness Scoring", FitnessFunction, this.fitnessFunction )
 				);
 	
-		document.body.appendChild(
+		optsDiv.appendChild(
 				this.makeOptionGroup( "Selection", SelectionFunction, this.selectionFunction )
 				);
 				
-		document.body.appendChild(
+		optsDiv.appendChild(
 				this.makeOptionGroup( "Bedding", BeddingFunction, this.beddingFunction )
 				);
 		
-		document.body.appendChild(
+		optsDiv.appendChild(
 				this.makeOptionGroup( "Crossover", CrossoverFunction, this.crossoverFunction )
 				);
 
-		document.body.appendChild(
+		optsDiv.appendChild(
 				this.makeOptionGroup( "Mutation", MutationFunction, this.mutationFunction )
+				);
+
+		optsDiv.appendChild(
+				this.makeOptionGroup( "Breeding", BreedingFunction, this.breedingFunction )
+				);
+
+		optsDiv.appendChild(
+				this.makeOptionGroup( "Culling", CullingFunction, this.cullingFunction )
 				);
 
 		
@@ -1583,6 +1697,7 @@ class ANNLab extends Object {
 
 	makeOptDiv ( name, element, nature, grpName ) {
 		const div = document.createElement( "div" );
+		div.id = element.id + "-opt";
 		div.classList.add( "opt" );
 		
 		const label = document.createElement( "label" );
@@ -1658,11 +1773,10 @@ class ANNLab extends Object {
 		div.appendChild( h3 );
 		h3.innerHTML = name;
 
-//window.xxx = func;
-//if ( !window.yyy ) window.yyy=div;
-
 		const funcSelect = Func.makeSelectElement();
 		Func.populateSelect( funcSelect, thisFunc.constructor.name );
+		funcSelect.id = Func.name;
+		
 		const funcSelDiv = this.makeOptDiv( "Function", funcSelect );
 		div.appendChild( funcSelDiv );
 
@@ -1671,10 +1785,10 @@ class ANNLab extends Object {
 			//for ( let option of thisFunc.options ) {
 			for ( let option of Func.instances.allOptions ) {
 				if ( !option.group ) {
-					
+
 					const sot = option.type;
 					const subOptInp = this.makeOptInput( sot.type, sot.min, sot.max, sot.step, sot.value );
-					subOptInp.id = option.id + "." + option.forCriteria;
+					subOptInp.id = Func.name + "." + option.forCriteria;
 					const sod = this.makeOptDiv( option.name, subOptInp, option.nature, option.id );
 
 					div.appendChild( sod );
@@ -1687,7 +1801,7 @@ class ANNLab extends Object {
 					for ( let subOpt of option.opts ) {
 						const sot = subOpt.type;
 						const subOptInp = this.makeOptInput( sot.type, sot.min, sot.max, sot.step, sot.value );
-						subOptInp.id = option.id + "." + subOpt.forCriteria;
+						subOptInp.id = Func.name + "." + option.id + "." + subOpt.forCriteria;
 						const sod = this.makeOptDiv( subOpt.name, subOptInp, subOpt.nature, option.id );
 	
 						div.appendChild( sod );
@@ -1702,8 +1816,6 @@ class ANNLab extends Object {
 			}
 		}
 		
-		
-console.log(div);
 		return div;
 	};
 	
