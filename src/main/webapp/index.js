@@ -1240,13 +1240,8 @@ class ANNLab extends Object {
 
 		this._node = null;
 
-		//this.elites = 3;
-		//this.breedScore = 0.0;// 001;
-		//this.agentCount = 100;
-		//this.crossoverCount = Math.round( 20 * 0.5 );
-		//this.crossoverChance = 0.9;
-		//this.mutationChance = 0.0001;
-		//this.runs = 0;
+		this.agentCount = 100;
+		this.runs = 0;
 
 		this.sortingFunction = SortingFunction.forName();
 		this.fitnessFunction = FitnessFunction.forName();
@@ -1490,75 +1485,31 @@ class ANNLab extends Object {
 		}
 
 		const optsDiv = document.querySelector( "#optsdiv" );
-		//optsDiv.innerHTML = "";
-		for ( let d of optsDiv.querySelectorAll(".optgroup") ) d.style.display="none";
+
+		node.fitness = this.makeOptionGroup( "Fitness Scoring", FitnessFunction, this.fitnessFunction );
+		node.sorting = this.makeOptionGroup( "Sorting", SortingFunction, this.sortingFunction );
+		node.elitism = this.makeOptionGroup( "Elitism", ElitismFunction, this.elitismFunction );
+		node.selection = this.makeOptionGroup( "Selection", SelectionFunction, this.selectionFunction );
+		node.bedding = this.makeOptionGroup( "Bedding", BeddingFunction, this.beddingFunction );
+		node.crossover = this.makeOptionGroup( "Crossover", CrossoverFunction, this.crossoverFunction );
+		node.mutation = this.makeOptionGroup( "Mutation", MutationFunction, this.mutationFunction );
+		node.breeding = this.makeOptionGroup( "Breeding", BreedingFunction, this.breedingFunction );
+		node.culling = this.makeOptionGroup( "Culling", CullingFunction, this.cullingFunction );
 		
-		optsDiv.appendChild(
-				this.makeOptionGroup( "Elitism", ElitismFunction, this.elitismFunction )
-				);
-				
-		optsDiv.appendChild(
-				this.makeOptionGroup( "Fitness Scoring", FitnessFunction, this.fitnessFunction )
-				);
-	
-		optsDiv.appendChild(
-				this.makeOptionGroup( "Selection", SelectionFunction, this.selectionFunction )
-				);
-				
-		optsDiv.appendChild(
-				this.makeOptionGroup( "Bedding", BeddingFunction, this.beddingFunction )
-				);
+		optsDiv.appendChild( node.fitness );
+		optsDiv.appendChild( node.sorting );
+		optsDiv.appendChild( node.elitism );
+		optsDiv.appendChild( node.selection );
+		optsDiv.appendChild( node.bedding );
+		optsDiv.appendChild( node.crossover );
+		optsDiv.appendChild( node.mutation );
+		optsDiv.appendChild( node.breeding );
+		optsDiv.appendChild( node.culling );
 		
-		optsDiv.appendChild(
-				this.makeOptionGroup( "Crossover", CrossoverFunction, this.crossoverFunction )
-				);
+		const hr = document.createElement( "hr" );
+		hr.classList.add( "clr" );
+		optsDiv.appendChild( hr );
 
-		optsDiv.appendChild(
-				this.makeOptionGroup( "Mutation", MutationFunction, this.mutationFunction )
-				);
-
-		optsDiv.appendChild(
-				this.makeOptionGroup( "Breeding", BreedingFunction, this.breedingFunction )
-				);
-
-		optsDiv.appendChild(
-				this.makeOptionGroup( "Culling", CullingFunction, this.cullingFunction )
-				);
-
-		
-/*		node.elites = node.querySelector( "#eliteCount" );
-		node.elites.value = this.elites;
-		node.elites.addEventListener( "change", (e)=>{ this.elites = parseInt( e.target.value ); } );
-
-		node.breedScore = node.querySelector( "#breedScore" );
-		node.breedScore.value = this.breedScore;
-		node.breedScore.addEventListener( "change", (e)=>{ this.breedScore = parseFloat( e.target.value ); } );
-
-		node.crossoverCount = node.querySelector( "#xoverPercent" );
-		node.crossoverCount.value = 100 * (this.crossoverCount / 20.0 );
-		node.crossoverCount.addEventListener( "change", (e)=>{ this.crossoverCount = Math.round(20.0 * (e.target.value/100.0) ); } );
-
-		node.crossoverChance = node.querySelector( "#xoverChance" );
-		node.crossoverChance.value = 100.0 * this.crossoverChance;
-		node.crossoverChance.addEventListener( "change", (e)=>{ this.crossoverChance = e.target.value / 100.0; } );
-
-		node.crossoverFunction = node.querySelector( "#xoverFunction" );
-		CrossoverFunction.populateSelect( node.crossoverFunction, this.crossoverFunction.constructor.name  );
-		node.crossoverFunction.addEventListener( "change", (e)=>{ this.crossoverFunction = CrossoverFunction.forName( e.target.value);});
-
-//		node.crossoverBias = node.querySelector( "#xoverBias" );
-//		node.crossoverBias.disabled = true;
-
-		node.mutationChance = node.querySelector( "#mutationChance" );
-		node.mutationChance.value = 100.0 * this.mutationChance;
-		node.mutationChance.addEventListener( "change", (e)=>{ this.mutationChance = e.target.value / 100.0; } );
-
-		node.mutationFunction = node.querySelector( "#mutationFunction" );
-		node.mutationFunction.disabled = true;
-
-//		node.mutateBias = node.querySelector( "#mutateBias" );
-//		node.mutateBias.disabled = true;
-*/
 		node.reset = node.querySelector ( "#reset" );
 		node.reset.addEventListener( "click", (e)=>{this.dirtyProto();});
 
@@ -1567,19 +1518,16 @@ class ANNLab extends Object {
 
 		node.step1 = node.querySelector( "#step1" );
 		node.step1.addEventListener( "click", (e)=>{
-			//Promise.resolve().then( (e)=>{this.runGens( 1 ); });
 			Promise.resolve().then( (e)=>{this.iterate( 1 ); });
 		});
 
 		node.step100 = node.querySelector( "#step100" );
 		node.step100.addEventListener( "click", (e)=>{
-			//Promise.resolve().then( (e)=>{this.runGens( 100 ); });
 			Promise.resolve().then( (e)=>{this.iterate( 100 ); });
 		});
 
 		node.step1000 = node.querySelector( "#step1000" );
 		node.step1000.addEventListener( "click", (e)=>{
-			//Promise.resolve().then( (e)=>{this.runGens( 1000 ); });
 			Promise.resolve().then( (e)=>{this.iterate( 1000 ); });
 		});
 
@@ -1652,17 +1600,7 @@ class ANNLab extends Object {
 	};
 	
 	makeOptionGroup ( name, Func, thisFunc ) {
-//	<div class="optgroup">
-//		<h3>Elitism</h3>
-//		<div class="opt">
-//			<label for="eliteCount">Elites</label><input id="eliteCount"
-//				type="number" min="0" />
-//		</div>
-//		<div class="opt">
-//			<label for="elitePercent">Percent</label><input id="elitePercent"
-//				type="number" min="0" max="100" />
-//		</div>
-//	</div>
+
 		const div = document.createElement( "div" );
 		div.classList.add( "optgroup" );
 
@@ -1677,9 +1615,7 @@ class ANNLab extends Object {
 		const funcSelDiv = this.makeOptDiv( "Function", funcSelect );
 		div.appendChild( funcSelDiv );
 
-		//if ( thisFunc.options ) {
 		if ( Func.instances.allOptions ) {
-			//for ( let option of thisFunc.options ) {
 			
 			for ( let option of Func.instances.allOptions ) {
 				if ( !option.group ) {
@@ -1761,12 +1697,6 @@ class ANNLab extends Object {
 	};
 
 	makeOutputProto( protoAgent ) {
-//	<div class="protolayer">
-//		<span>Outputs</span>
-//		<input type="number" min="1" step="1" value="1" />
-//		<select><option>Linear</option></select>
-//		<input style="width: 8em" value="0.7" />
-//	</div>
 
 		const outputLayer = protoAgent.layers[ protoAgent.layers.length - 1 ];
 
@@ -1851,15 +1781,6 @@ class ANNLab extends Object {
 	};
 
 	makeHiddenProto ( index, protoAgent ) {
-//	<div class="protolayer">
-//		<span>Hidden</span>
-//		<input type="number" min="1" step="1" value="4" />
-//		<select><option>Sigmoid</option></select>
-//		<button>^</button>
-//		<button>+</button>
-//		<button>X</button>
-//		<button>v</button>
-//	</div>
 
 		const div = document.createElement( "div" );
 		div.id = "hidden" + index;
@@ -1912,12 +1833,6 @@ class ANNLab extends Object {
 	};
 
 	makeInputProto ( protoAgent ) {
-
-//	<div class="protolayer">
-//		<span>Inputs</span><input type="number" min="1" step="1" value="2" /><select
-//			disabled><option>Activator</option></select><input
-//			style="width: 8em" value="0.2,0.5" />
-//	</div>
 
 		const div = document.createElement( "div" );
 		div.id = "input";
@@ -2018,7 +1933,7 @@ class LinkedList extends Object {
 		}
 
 		return this;
-	}
+	};
 
 	insert ( value, index = 0 ) {
 
@@ -2253,17 +2168,6 @@ class LinkedList extends Object {
 function load ( event ) {
 	window.annlab = new ANNLab();
 	document.body.appendChild( window.annlab.node );
-// Promise.resolve().then(()=>{
-// for ( let i = 0; i < 1; i++ ) {
-// window.nn.runGen();
-// }
-// });
-
-// window.setTimeout( ()=>{
-// for ( let i = 0; i < 100; i++ ) {
-// window.nn.runGen();
-// }
-// }, 800);
 }
 
 window.addEventListener( "load", load, false );
