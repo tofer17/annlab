@@ -758,18 +758,14 @@ class ElitismFunction extends SingletonObject {
 		if ( this.criteria.promotion.topPerc != null ) {
 			const perc = Math.round( population.length * this.criteria.promotion.topPerc );
 			if ( perc < maxCount ) maxCount = perc;
-			//if ( perc > minCount ) minCount = perc;
 		}
 		
 		const lteScore = this.criteria.promotion.lteScore != null ? parseFloat( this.criteria.promotion.lteScore ) : Number.MAX_VALUE;
 		
-		console.log( this.criteria, maxCount, minCount, lteScore );
-		
 		let index = 0;
 		for ( let agent of population ) {
 			agent.isElite = index < minCount || ( agent.lastScore <= lteScore && index < maxCount );
-			//index++ < this.criteria.count;
-if(agent.isElite)console.warn(agent.id, index, minCount, agent.lastScore, lteScore, maxCount);
+
 			index++;
 		}
 
@@ -1434,7 +1430,6 @@ class ANNLab extends Object {
 		}
 
 		this.elitismFunction.salvate( this.agents, newGen );
-		console.log(this.agents.length);
 
 		this.cullingFunction.cull( this.agents );
 
@@ -1456,11 +1451,10 @@ class ANNLab extends Object {
 
 	runGens ( n = 100 ) {
 		this.incarnateProtoAgent();
-		//this.agents = [];
+
 		this.agents = new LinkedList();
 
 		for ( let i = 0; i < this.agentCount; i++ ) {
-			//this.agents.push( this.protoAgent.replicate( i ) );
 			this.agents.add( this.protoAgent.replicate( i ) );
 		}
 
@@ -1669,7 +1663,7 @@ class ANNLab extends Object {
 				);
 
 		
-		node.elites = node.querySelector( "#eliteCount" );
+/*		node.elites = node.querySelector( "#eliteCount" );
 		node.elites.value = this.elites;
 		node.elites.addEventListener( "change", (e)=>{ this.elites = parseInt( e.target.value ); } );
 
@@ -1701,7 +1695,7 @@ class ANNLab extends Object {
 
 //		node.mutateBias = node.querySelector( "#mutateBias" );
 //		node.mutateBias.disabled = true;
-
+*/
 		node.reset = node.querySelector ( "#reset" );
 		node.reset.addEventListener( "click", (e)=>{this.dirtyProto();});
 
