@@ -560,6 +560,7 @@ class Agent extends Object {
 class FitnessFunction extends SingletonObject {
 	constructor () {
 		super();
+		this.name = "Target Delta";
 	};
 
 	scoreAgent ( agent, targets ) {
@@ -619,6 +620,101 @@ FitnessFunction.register( FitnessFunction );
 class ElitismFunction extends SingletonObject {
 	constructor () {
 		super();
+		this.name = "Standard";
+		
+		this.options = [
+			{ group:"Promotion", id:"promotion", opts:[
+				{
+					name: "Minimum Count",
+					help: "",
+					forCriteria: "minCount",
+					type: { type:"int", min:0, step:1, value:1 },
+					nature: "optional-checked"
+				},
+				{
+					name: "Maximum Count",
+					help: "",
+					forCriteria: "maxCount",
+					type: { type:"int", min:0,step:1 },
+					nature: "optional"
+				},
+				{
+					name: "Top Percent",
+					help: "",
+					forCriteria: "topPerc",
+					type: { type:"perc", min:0, max:100, step:1, value:10 },
+					nature: "exclusive"
+				},
+				{
+					name: "Score &lt;=",
+					help: "",
+					forCriteria: "lteScore",
+					type: { type:"dec", min:0, step:0.0001, value:0.0001 },
+					nature: "exclusive"
+				}
+			]},
+			{ group:"Replication", id:"replication", opts:[
+				{
+					name: "Minimum Count",
+					help: "",
+					forCriteria: "minCount",
+					type: { type:"int", min:0, step:1 },
+					nature: "optional"
+				},
+				{
+					name: "Maximum Count",
+					help: "",
+					forCriteria: "maxCount",
+					type: { type:"int", min:0, step:1 },
+					nature: "optional"
+				},
+				{
+					name: "Top Percent",
+					help: "",
+					forCriteria: "topPerc",
+					type: { type:"perc", min:0, max:100, step:1, value:100 },
+					nature: "exclusive"
+				},
+				{
+					name: "Score &lt;=",
+					help: "",
+					forCriteria: "lteScore",
+					type: { type:"dec", min:0, max:10, step:0.0001, value:0.0001 },
+					nature: "exclusive"
+				}
+			]},
+			{ group:"Salvation", id:"salvation", opts:[
+				{
+					name: "Minimum Count",
+					help: "",
+					forCriteria: "minCount",
+					type: { type:"int", min:0, step:1 },
+					nature: "optional"
+				},
+				{
+					name: "Maximum Count",
+					help: "",
+					forCriteria: "maxCount",
+					type: { type:"int", min:0, step:1 },
+					nature: "optional"
+				},
+				{
+					name: "Top Percent",
+					help: "",
+					forCriteria: "topPerc",
+					type: { type:"perc", min:0, max:100, step:1, value:100 },
+					nature: "exclusive"
+				},
+				{
+					name: "Score &lt;=",
+					help: "",
+					forCriteria: "lteScore",
+					type: { type:"dec", min:0, max:10, step:0.0001, value:0.0001 },
+					nature: "exclusive"
+				}
+			]}
+		];
+		
 	};
 
 	/**
@@ -816,6 +912,7 @@ class CrossoverFunction extends SingletonObject {
 
 	constructor () {
 		super();
+		this.name = "Uniform";
 
 		this.opts = {};
 		this.opts.count = 0;
@@ -852,6 +949,7 @@ CrossoverFunction.register( CrossoverFunction );
 class KPointCrossoverFunction extends CrossoverFunction {
 	constructor () {
 		super();
+		this.name = "kPoint";
 
 		this.opts.k = 1;
 	};
@@ -1301,6 +1399,9 @@ class ANNLab extends Object {
 			});
 		}
 
+		document.body.appendChild(
+		this.makeOptionGroup( "Elitism", this.elitismFunction )
+		);
 		node.elites = node.querySelector( "#eliteCount" );
 		node.elites.value = this.elites;
 		node.elites.addEventListener( "change", (e)=>{ this.elites = parseInt( e.target.value ); } );
@@ -1366,6 +1467,122 @@ class ANNLab extends Object {
 		return this._node;
 	};
 
+	makeOptDiv ( name, element, nature, grpName ) {
+		const div = document.createElement( "div" );
+		div.classList.add( "opt" );
+		
+		const label = document.createElement( "label" );
+		label.htmlFor = element.id;
+		label.innerHTML = name;
+		
+		let natureInp;
+		if ( nature == null ) {
+			natureInp = null;
+		} else if ( nature == "required" || nature == "optional" || nature == "optional-checked" ) {
+			natureInp = document.createElement( "input" );
+			natureInp.type = "checkbox";
+			natureInp.checked = nature != "optional"; 
+			natureInp.disabled = nature == "required";
+			natureInp.id = element.id + "-nature";
+		} else if ( nature == "exclusive" ) {
+			natureInp = document.createElement( "input" );
+			natureInp.type = "radio";
+			natureInp.name = grpName;
+			natureInp.checked = false;
+			natureInp.id = element.id + "-nature";
+		}
+		
+		div.appendChild( label );
+		if ( natureInp != null ) {
+			div.appendChild( natureInp );
+		}
+		div.appendChild( element );
+		
+		return div;
+	};
+	
+	makeOptInput ( type, min, max, step, value) {
+		const inp = document.createElement( "input" );
+		
+		inp.type = "number";
+		
+		if ( min != null ) {
+			inp.min = min;
+		}
+		
+		if ( max != null ) {
+			inp.max = max;
+		}
+		
+		if ( step != null ) {
+			inp.step = step;
+		}
+		
+		if ( value != null ) {
+			inp.value = value;
+		}
+
+		return inp;
+	};
+	
+	makeOptionGroup ( name, func ) {
+//	<div class="optgroup">
+//		<h3>Elitism</h3>
+//		<div class="opt">
+//			<label for="eliteCount">Elites</label><input id="eliteCount"
+//				type="number" min="0" />
+//		</div>
+//		<div class="opt">
+//			<label for="elitePercent">Percent</label><input id="elitePercent"
+//				type="number" min="0" max="100" />
+//		</div>
+//	</div>
+		const div = document.createElement( "div" );
+		div.classList.add( "optgroup" );
+
+		const h3 = document.createElement( "h3" );
+		div.appendChild( h3 );
+		h3.innerHTML = name;
+
+window.xxx = func;
+if ( !window.yyy ) window.yyy=div;
+
+		const funcSelect = func.constructor.makeSelectElement();
+		func.constructor.populateSelect( funcSelect );
+		const funcSelDiv = this.makeOptDiv( "Function", funcSelect );
+		div.appendChild( funcSelDiv );
+		
+		for ( let option of func.options ) {
+			if ( !option.group ) {
+
+			} else {
+				const subOptDiv = document.createElement( "h4" );
+				subOptDiv.innerHTML = option.group;
+				div.appendChild( subOptDiv );
+				subOptDiv.classList.add( "suboptgroup" );
+				for ( let subOpt of option.opts ) {
+					const sot = subOpt.type;
+					const subOptInp = this.makeOptInput( sot.type, sot.min, sot.max, sot.step, sot.value );
+					subOptInp.id = option.id + "." + subOpt.forCriteria;
+					const sod = this.makeOptDiv( subOpt.name, subOptInp, subOpt.nature, option.id );
+
+					div.appendChild( sod );
+				}
+
+				const rad = div.querySelector("[name=\"" + option.id + "\"]" );
+				if ( rad != null ) {
+					rad.checked = true;
+				}
+			}
+
+		}
+		
+		
+console.log(div);
+		return div;
+	};
+	
+	
 	dirtyProto () {
 		this.protoAgent.isDirty = true;
 	};
