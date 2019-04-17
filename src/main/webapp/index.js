@@ -758,7 +758,7 @@ class ElitismFunction extends SingletonObject {
 		if ( this.criteria.promotion.topPerc != null ) {
 			const perc = Math.round( population.length * this.criteria.promotion.topPerc );
 			if ( perc < maxCount ) maxCount = perc;
-			if ( perc > minCount ) minCount = perc;
+			//if ( perc > minCount ) minCount = perc;
 		}
 		
 		const lteScore = this.criteria.promotion.lteScore != null ? parseFloat( this.criteria.promotion.lteScore ) : Number.MAX_VALUE;
@@ -767,9 +767,9 @@ class ElitismFunction extends SingletonObject {
 		
 		let index = 0;
 		for ( let agent of population ) {
-			agent.isElite = index <= minCount || ( agent.lastScore <= lteScore && index <= maxCount );
+			agent.isElite = index < minCount || ( agent.lastScore <= lteScore && index < maxCount );
 			//index++ < this.criteria.count;
-			
+if(agent.isElite)console.warn(agent.id, index, minCount, agent.lastScore, lteScore, maxCount);
 			index++;
 		}
 
@@ -794,7 +794,7 @@ class ElitismFunction extends SingletonObject {
 	 * Removes elites that meet the criteria from the population and returns them in a new array.
 	 */
 	salvate ( population, newGen ) {
-		//x x
+
 		for ( let agent of population ) {
 			if ( agent.isElite ) {
 				newGen.add( population.removeValue( agent ) );
@@ -1434,6 +1434,7 @@ class ANNLab extends Object {
 		}
 
 		this.elitismFunction.salvate( this.agents, newGen );
+		console.log(this.agents.length);
 
 		this.cullingFunction.cull( this.agents );
 
