@@ -136,6 +136,10 @@ class SingletonObject extends Object {
 	get displayName () {
 		return this.name || this.constructor.name;
 	};
+	
+	setCriteria ( criteria ) {
+		this.criteria = criteria;
+	}
 
 	static populateSelect ( sel, selectedInstance ) {
 		const instanceNames = [];
@@ -578,36 +582,7 @@ class FitnessFunction extends SingletonObject {
 	constructor () {
 		super();
 		this.name = "Target Delta";
-//		this.options = [
-//			{
-//				name: "Minimum Count",
-//				help: "",
-//				forCriteria: "minCount",
-//				type: { type:"int", min:0, step:1, value:1 },
-//				nature: "optional-checked"
-//			},
-//			{
-//				name: "Maximum Count",
-//				help: "",
-//				forCriteria: "maxCount",
-//				type: { type:"int", min:0,step:1 },
-//				nature: "optional"
-//			},
-//			{
-//				name: "Top Percent",
-//				help: "",
-//				forCriteria: "topPerc",
-//				type: { type:"perc", min:0, max:100, step:1, value:10 },
-//				nature: "exclusive"
-//			},
-//			{
-//				name: "Score &lt;=",
-//				help: "",
-//				forCriteria: "lteScore",
-//				type: { type:"dec", min:0, step:0.0001, value:0.0001 },
-//				nature: "exclusive"
-//			}
-//		];
+		this.criteria = {};
 	};
 
 	scoreAgent ( agent, targets ) {
@@ -763,15 +738,39 @@ class ElitismFunction extends SingletonObject {
 		];
 		
 	};
+	
+	setCriteria ( criteria ) {
+		super.setCriteria( criteria );
+		
+		this.criteria.promotion.maxCount = this.criteria.promotion.maxCount != null ? this.criteria.promotion.maxCount : Number.MAX_SAFE_INTEGER;
+		this.criteria.promotion.minCount = this.criteria.promotion.minCount != null ? this.criteria.promotion.minCount : 0;
+		this.criteria.promotion.lteScore = this.criteria.promotion.lteScore != null ? this.criteria.promotion.lteScore : Number.MAX_VALUE;
+	};
 
 	/**
 	 * Marks agents that meet the criteria as elites; returns an array.
 	 */
-	promote ( population, criteria ) {
+	promote ( population ) {
 
+		let maxCount = this.criteria.promotion.maxCount;
+		let minCount = this.criteria.promotion.minCount;
+	
+		if ( this.criteria.promotion.topPerc != null ) {
+			const perc = Math.round( population.length * this.criteria.promotion.topPerc );
+			if ( perc < maxCount ) maxCount = perc;
+			if ( perc > minCount ) minCount = perc;
+		}
+		
+		const lteScore = this.criteria.promotion.lteScore != null ? parseFloat( this.criteria.promotion.lteScore ) : Number.MAX_VALUE;
+		
+		console.log( this.criteria, maxCount, minCount, lteScore );
+		
 		let index = 0;
 		for ( let agent of population ) {
-			agent.isElite = index++ < criteria.count;
+			agent.isElite = index <= minCount || ( agent.lastScore <= lteScore && index <= maxCount );
+			//index++ < this.criteria.count;
+			
+			index++;
 		}
 
 		return {};
@@ -780,7 +779,7 @@ class ElitismFunction extends SingletonObject {
 	/**
 	 * Replicates (clones) elites in the population according to the criteria; returns an array with the new replicants (agents).
 	 */
-	replicate ( population, newGen, criteria ) {
+	replicate ( population, newGen ) {
 
 		for ( let agent of population ) {
 			if ( agent.isElite ) {
@@ -794,7 +793,7 @@ class ElitismFunction extends SingletonObject {
 	/**
 	 * Removes elites that meet the criteria from the population and returns them in a new array.
 	 */
-	salvate ( population, newGen, criteria ) {
+	salvate ( population, newGen ) {
 		//x x
 		for ( let agent of population ) {
 			if ( agent.isElite ) {
@@ -813,20 +812,28 @@ ElitismFunction.register( ElitismFunction );
  * The Sorting Function, uhm, sorts... sort'a mostly all it does.
  */
 class SortingFunction extends SingletonObject {
+	constructor () {
+		super();
+		this.name = "Doesn't";
+	}
 	/**
 	 * Doesn't do anything perceptible.
 	 */
-	sort ( population, criteria ) {
+	sort ( population ) {
 		return population;
 	};
 }
 SortingFunction.register( SortingFunction );
 
 class AscendingSortingFunction extends SortingFunction {
+	constructor () {
+		super();
+		this.name = "Ascending";
+	}
 	/**
 	 * Basic ascending in-place sort on lastScore.
 	 */
-	sort ( population, criteria ) {
+	sort ( population ) {
 
 		population.sort(
 			( o1, o2 ) => {
@@ -849,7 +856,7 @@ class SelectionFunction extends SingletonObject {
 	/**
 	 * The default behavior is to select all.
 	 */
-	select ( population, criteria ) {
+	select ( population ) {
 		for ( let agent of population ) {
 			agent.isSelected = true;
 		}
@@ -900,26 +907,15 @@ class TopPercentileSelectionFunction extends SingletonObject {
 		];
 	};
 	
-	select ( population, criteria ) {
+	select ( population ) {
 
-		if ( criteria == null || criteria.percentage == null ) {
-			criteria = { percentage : 0.9 };
-		}
-
-		const cut = Math.round( population.length * criteria.percentage );
+		const cut = Math.round( population.length * this.criteria.topPerc );
 
 		let index = 0;
 		for ( let agent of population ) {
 			agent.isSelected = index <= cut;
 			index++;
 		}
-
-//		for ( let i = 0; i < population.length; i++ ) {
-//			population[i].isSelected = i <= cut;
-//			if ( i <= cut ) {
-//				ret.push( population[i] );
-//			}
-//		}
 
 	};
 }
@@ -938,7 +934,7 @@ class BeddingFunction extends SingletonObject {
 		return parent.isSelected;
 	};
 
-	bedPopulation ( population, criteria ) {
+	bedPopulation ( population ) {
 		const beds = new LinkedList();
 
 		let parentA = null;
@@ -971,12 +967,14 @@ class CrossoverFunction extends SingletonObject {
 		super();
 		this.name = "Uniform";
 
-		this.opts = {};
-		this.opts.count = 0;
-		this.opts.chance = 0.0;
-		this.opts.mutationFunction = null;
-		
 		this.options = [
+			{
+				name: "DNA Length",
+				help: "",
+				forCriteria: "dnaLength",
+				type: { type: "int", min: 1, step: 1, value: 20 },
+				nature: "required"				
+			},
 			{
 				name: "Chance",
 				help: "",
@@ -987,35 +985,38 @@ class CrossoverFunction extends SingletonObject {
 			{
 				name: "Percent",
 				help: "",
-				forCriteria: "count",
+				forCriteria: "perc",
 				type: { type:"perc", min:0, max: 100, step:1, value: 50 },
 				nature: "required"
 			}
 		];
+	
+	};
 
+	setCriteria ( criteria ) {
+		super.setCriteria( criteria );
 		
-		
-	}
-
+		this.criteria.count = Math.round( this.criteria.dnaLength * this.criteria.perc );
+	};
+	
 	/**
 	 * Default is uniform: x% of the dna part has a y% chance and mutationFunction.
 	 * Thus, opts is: <code>{ count : i, chance : f, mutationFunction : func </code>.
 	 */
-	crossover ( dnaA, dnaB ) {
-		const rn = randomNumbers( this.opts.count, 0, dnaA.length );
+	crossover ( dnaA, dnaB, mutationFunction ) {
+
+		const rn = randomNumbers( this.criteria.count, 0, this.criteria.dnaLength );
 
 		let MuTAt3 = 0;
 
 		for ( let i of rn ) {
-			if ( Math.random() <= this.opts.chance ) {
+			if ( Math.random() <= this.criteria.chance ) {
 				const tmp = dnaA[ i ];
 				dnaA[ i ] = dnaB[ i ];
 				dnaB[ i ] = tmp;
 			}
 
-			if ( this.opts.mutationFunction != null ) {
-				MuTAt3 += this.opts.mutationFunction.mutate( i, dnaA, dnaB );
-			}
+			MuTAt3 += mutationFunction.mutate( i, dnaA, dnaB );
 		}
 
 		return MuTAt3;
@@ -1027,8 +1028,6 @@ class KPointCrossoverFunction extends CrossoverFunction {
 	constructor () {
 		super();
 		this.name = "kPoint";
-
-		this.opts.k = 1;
 		
 		this.options = [
 			{
@@ -1039,36 +1038,33 @@ class KPointCrossoverFunction extends CrossoverFunction {
 				nature: "required"
 			}
 		];
-
 	};
 
-	crossover ( dnaA, dnaB ) {
+	crossover ( dnaA, dnaB, mutationFunction ) {
 
 		let MuTAt3 = 0;
 
-		for ( let i = 0; i < this.opts.k; i++ ) {
-			MuTAt3 += this._crossover( dnaA, dnaB );
+		for ( let i = 0; i < this.criteria.k; i++ ) {
+			MuTAt3 += this._crossover( dnaA, dnaB, mutationFunction );
 		}
 
 		return MuTAt3;
 	}
 
-	_crossover ( dnaA, dnaB ) {
+	_crossover ( dnaA, dnaB, mutationFunction ) {
 
-		const p = Math.floor( Math.random() * dnaA.length );
+		const p = Math.floor( Math.random() * this.criteria.dnaLength );
 
 		let MuTAt3 = 0;
 
 		for ( let i = p; i < dnaA.length; i++ ) {
-			if ( Math.random() <= this.opts.chance ) {
+			if ( Math.random() <= this.criteria.chance ) {
 				const tmp = dnaA[i];
 				dnaA[ i ] = dnaB[ i ];
 				dnaB[ i ] = tmp;
 			}
 
-			if ( this.opts.mutationFunction != null ) {
-				MuTAt3 += this.opts.mutationFunction.mutate( i, dnaA, dnaB );
-			}
+			MuTAt3 += mutationFunction.mutate( i, dnaA, dnaB );
 		}
 
 		return MuTAt3;
@@ -1099,10 +1095,14 @@ class MutationFunction extends SingletonObject {
 		];
 
 	};
-
+	
 	mutate ( index, dnaA, dnaB ) {
 
-		if ( Math.random() <= this.opts.chance ) {
+		if ( this.criteria.chance == null ) {
+			return 0;
+		}
+
+		if ( Math.random() <= this.criteria.chance ) {
 
 			if ( Math.random() < 0.5 ) {
 				dnaA[ index ] = "" + Math.round( dnaA[ index ] * Math.random() );
@@ -1129,7 +1129,11 @@ class AggressiveMutationFunction extends MutationFunction {
 	};
 
 	mutate ( index, dnaA, dnaB ) {
-		if ( Math.random() <= this.opts.chance ) {
+		if ( this.criteria.chance == null ) {
+			return 0;
+		}
+		
+		if ( Math.random() <= this.criteria.chance ) {
 
 			if ( Math.random() < 0.5 ) {
 				dnaA[ index ] = "" + Math.floor( ( Math.random() * 10 ) % 10 );
@@ -1164,7 +1168,7 @@ class BreedingFunction extends SingletonObject {
 		];
 	};
 	
-	breed ( parents, newGen, crossoverFunction ) {
+	breed ( parents, newGen, crossoverFunction, mutationFunction ) {
 
 		let agentA = parents[0];
 		let agentB = parents[1];
@@ -1178,7 +1182,7 @@ class BreedingFunction extends SingletonObject {
 			let partA = dnaA[ i ];
 			let partB = dnaB[ i ];
 
-			MuTAt3 += crossoverFunction.crossover( partA, partB );
+			MuTAt3 += crossoverFunction.crossover( partA, partB, mutationFunction );
 
 		}
 
@@ -1186,7 +1190,7 @@ class BreedingFunction extends SingletonObject {
 		childA.dna = dnaA;
 		newGen.add( childA );
 
-		if ( 1 == 1 ) {
+		if ( this.criteria.coount > 1 ) {
 			let childB = agentB.replicate( agentB.id );
 			childB.dna = dnaB;
 			newGen.add( childB );
@@ -1219,18 +1223,15 @@ class CullingFunction extends SingletonObject {
 		
 	}
 	
-	cull ( population, criteria ) {
-		if ( criteria == null ) {
-			criteria = {};
-			criteria.count = 50;
-		} else if ( criteria.count == null ) {
-			criteria.count = 50;
-		}
+	cull ( population ) {
 
-		const tail = population.getNode( criteria.count - 1 );
+		const tail = population.getNode( this.criteria.count - 1 );
+		
 		tail.next = null;
+		
 		population.tail = tail;
-		population.length = criteria.count;
+		
+		population.length = this.criteria.count;
 
 	};
 }
@@ -1277,6 +1278,18 @@ class ANNLab extends Object {
 		this.agents;
 
 	};
+	
+	fixValue ( inp ) {
+		if ( inp.annLabType == "int" ) {
+			return parseInt( inp.value );
+		} else if ( inp.annLabType == "perc" ) {
+			return parseFloat( inp.value ) / 100.0;
+		} else if ( inp.annLabType == "dec" ) {
+			return parseFloat( inp.value );
+		} else {
+			return inp.value;
+		}	
+	};
 
 	getAllOpts () {
 		const criteria = {};
@@ -1313,7 +1326,7 @@ class ANNLab extends Object {
 	
 					if ( subName == null ) {
 
-						criteria[ funcName ][ optName ] = inp.value;
+						criteria[ funcName ][ optName ] = this.fixValue( inp );
 						
 					} else {
 				//console.log(subName,optName);
@@ -1321,7 +1334,7 @@ class ANNLab extends Object {
 						if ( ! criteria[ funcName ][ grpName ] ) {
 							criteria[ funcName ][ grpName ] = {};
 						}
-						criteria[ funcName ][ grpName ][ subName ] = inp.value;
+						criteria[ funcName ][ grpName ][ subName ] = this.fixValue( inp );
 					}
 				}
 				
@@ -1331,6 +1344,8 @@ class ANNLab extends Object {
 			//console.log( opt.id, fullName );
 			
 		}
+		
+		this.criteria = criteria;
 		console.log( criteria );
 	}
 	
@@ -1339,12 +1354,36 @@ class ANNLab extends Object {
 
 			this.getAllOpts();
 			
-			this.crossoverFunction.opts.count = this.crossoverCount;
-			this.crossoverFunction.opts.chance = this.crossoverChance;
-			this.crossoverFunction.opts.k = 2;
-			this.crossoverFunction.opts.mutationFunction = this.mutationFunction;
+			this.beddingFunction = BeddingFunction.forName( this.criteria.BeddingFunction.name );
+			this.beddingFunction.setCriteria( this.criteria.BeddingFunction );
+			
+			this.breedingFunction = BreedingFunction.forName( this.criteria.BreedingFunction.name );
+			this.breedingFunction.setCriteria( this.criteria.BreedingFunction );
+			
+			this.crossoverFunction = CrossoverFunction.forName( this.criteria.CrossoverFunction.name );
+			this.crossoverFunction.setCriteria( this.criteria.CrossoverFunction );
+			
+			this.cullingFunction = CullingFunction.forName( this.criteria.CullingFunction.name );
+			this.cullingFunction.setCriteria( this.criteria.CullingFunction );
+			
+			this.elitismFunction = ElitismFunction.forName( this.criteria.ElitismFunction.name );
+			this.elitismFunction.setCriteria( this.criteria.ElitismFunction );
+			
+			this.fitnessFunction = FitnessFunction.forName( this.criteria.FitnessFunction.name );
+			this.fitnessFunction.setCriteria( this.criteria.FitnessFunction );
+			
+			this.mutationFunction = MutationFunction.forName( this.criteria.MutationFunction.name );
+			this.mutationFunction.setCriteria( this.criteria.MutationFunction );
+			
+			this.selectionFunction = SelectionFunction.forName( this.criteria.SelectionFunction.name );
+			this.selectionFunction.setCriteria( this.criteria.SelectionFunction );
+			
+			//this.crossoverFunction.opts.count = this.crossoverCount;
+			//this.crossoverFunction.opts.chance = this.crossoverChance;
+			//this.crossoverFunction.opts.k = 2;
+			//this.crossoverFunction.opts.mutationFunction = this.mutationFunction;
 
-			this.mutationFunction.opts.chance = this.mutationChance;
+			//this.mutationFunction.opts.chance = this.mutationChance;
 
 			this.incarnateProtoAgent();
 			this.agents = new LinkedList();
@@ -1380,24 +1419,23 @@ class ANNLab extends Object {
 		const newGen = new LinkedList();
 		const runResult = this.fitnessFunction.scorePopulation( this.agents, this.protoAgent.outputBiases );
 
-		this.sortingFunction.sort( this.agents, {} );
+		this.sortingFunction.sort( this.agents );
 
-		this.elitismFunction.promote( this.agents, { count : this.elites } );
+		this.elitismFunction.promote( this.agents );
 
+		this.elitismFunction.replicate( this.agents, newGen );
 
-		this.elitismFunction.replicate( this.agents, newGen, {} );
+		this.selectionFunction.select( this.agents );
 
-		this.selectionFunction.select( this.agents, { percentage : 0.75 } );
-
-		const beds = this.beddingFunction.bedPopulation( this.agents, { count : 2 } );
+		const beds = this.beddingFunction.bedPopulation( this.agents );
 
 		for ( let bed of beds ) {
-			this.breedingFunction.breed( bed, newGen, this.crossoverFunction );
+			this.breedingFunction.breed( bed, newGen, this.crossoverFunction, this.mutationFunction );
 		}
 
-		this.elitismFunction.salvate( this.agents, newGen, {} );
+		this.elitismFunction.salvate( this.agents, newGen );
 
-		this.cullingFunction.cull( this.agents, { count : 20 } );
+		this.cullingFunction.cull( this.agents );
 
 		this.agents.addFrom( newGen );
 
@@ -1595,7 +1633,7 @@ class ANNLab extends Object {
 
 		const optsDiv = document.querySelector( "#optsdiv" );
 		//optsDiv.innerHTML = "";
-		for ( let d of optsDiv.querySelectorAll(".optgroup") )d.style.display="none";
+		for ( let d of optsDiv.querySelectorAll(".optgroup") ) d.style.display="none";
 		
 		optsDiv.appendChild(
 				this.makeOptionGroup( "Elitism", ElitismFunction, this.elitismFunction )
@@ -1732,8 +1770,9 @@ class ANNLab extends Object {
 	
 	makeOptInput ( type, min, max, step, value) {
 		const inp = document.createElement( "input" );
-		
 		inp.type = "number";
+
+		inp.annLabType = type;
 		
 		if ( min != null ) {
 			inp.min = min;
@@ -1783,6 +1822,7 @@ class ANNLab extends Object {
 		//if ( thisFunc.options ) {
 		if ( Func.instances.allOptions ) {
 			//for ( let option of thisFunc.options ) {
+			
 			for ( let option of Func.instances.allOptions ) {
 				if ( !option.group ) {
 
