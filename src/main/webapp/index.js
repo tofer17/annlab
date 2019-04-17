@@ -1,20 +1,5 @@
 'use strict';
 
-/*
- * Husbandry
- * <ul>
- * <li>Score agents and sort (FitnessFunction)</li>
- * <li>Declare elites by amount, percent, score, combo ("at least 2, up to 5") (ElitismFunction.promotion)</li>
- * <li>Clone (amount, percent) elites into new generation (ElitismFunction.replication)</li>
- * <li>Select parents* in order,** and breed*** into new population</li>
- * <li> * SelectionFunction: Fixed amount/percent, score, or combo</li>
- * <li> ** BeddingFunction: Fixed amount...</li>
- * <li>*** BreedingFunction: produce children, up to number of parents, by fixed or random amount.</li>
- * <li>Move (amount, percent) elites into new population (ElitismFunction.salvation)</li>
- * <li>Cull old population by amount, percent, age, score, random, combo (CullingFunction)</li>
- * </ul>
- */
-
 
 /**
  * Receives a number and padding-amount and returns a padded array: <br/>
@@ -113,7 +98,18 @@ function splitFloats ( value ) {
 	return ret;
 }
 
+/**
+ * Replaces all occurences of "searchValue" with "replaceValue" in a string and returns that.
+ * @param string The string to operate upon.
+ * @param searchValue The value to search (and replace if found with...)
+ * @param replaceValue The value to replace the search-value (if found).
+ * @returns The string devoid of searchVale (and possibly including replaceValue).
+ * @throws An error if search value can be found in replace value (or vice versa).
+ */
 function replaceAll ( string, searchValue, replaceValue ) {
+	if ( searchValue.indexOf( replaceValue ) != -1 || ( replaceValue != null && replaceValue.indexOf( searchValue != null ) != -1 ) ) {
+		throw new Error( "Man, don't make me endless: '" + searchValue + "' '" + replaceValue + "'" );
+	}
 	while ( string.indexOf( searchValue ) >= 0 ) {
 		string = string.replace( searchValue, replaceValue );
 	}
@@ -121,6 +117,12 @@ function replaceAll ( string, searchValue, replaceValue ) {
 	return string;
 }
 
+
+/**
+ * "querySelector" cannot deal with #id's that have "." in them. This fixes that with "\" chars.
+ * @param string Such as "#abc.123.xyz".
+ * @returns A string such as "#abc\\.123\\.xyz".
+ */
 function fixId ( string ) {
 	return replaceAll( replaceAll( string, ".", "\\!" ), "!", "." );
 }
@@ -139,7 +141,7 @@ class SingletonObject extends Object {
 	
 	setCriteria ( criteria ) {
 		this.criteria = criteria;
-	}
+	};
 
 	static populateSelect ( sel, selectedInstance ) {
 		const instanceNames = [];
@@ -333,7 +335,7 @@ class Neuron extends Object {
 		if ( bias != null ) {
 			this.bias = bias;
 		}
-	}
+	};
 
 	get dna () {
 
@@ -824,7 +826,7 @@ SortingFunction.register( SortingFunction );
 class AscendingSortingFunction extends SortingFunction {
 	constructor () {
 		super();
-		this.name = "Ascending";
+		this.name = "Ascending Score";
 	}
 	/**
 	 * Basic ascending in-place sort on lastScore.
@@ -945,7 +947,7 @@ class BeddingFunction extends SingletonObject {
 		}
 
 		return beds;
-	}
+	};
 }
 BeddingFunction.register( BeddingFunction );
 
@@ -1045,7 +1047,7 @@ class KPointCrossoverFunction extends CrossoverFunction {
 		}
 
 		return MuTAt3;
-	}
+	};
 
 	_crossover ( dnaA, dnaB, mutationFunction ) {
 
@@ -1141,7 +1143,7 @@ class AggressiveMutationFunction extends MutationFunction {
 		}
 
 		return 0;
-	}
+	};
 }
 MutationFunction.register( AggressiveMutationFunction );
 
@@ -1193,7 +1195,7 @@ class BreedingFunction extends SingletonObject {
 		}
 
 		return MuTAt3;
-	}
+	};
 }
 BreedingFunction.register( BreedingFunction );
 
@@ -1215,9 +1217,7 @@ class CullingFunction extends SingletonObject {
 				nature: "required"
 			}
 		];
-
-		
-	}
+	};
 	
 	cull ( population ) {
 
@@ -1240,13 +1240,13 @@ class ANNLab extends Object {
 
 		this._node = null;
 
-		this.elites = 3;
-		this.breedScore = 0.0;// 001;
-		this.agentCount = 100;
-		this.crossoverCount = Math.round( 20 * 0.5 );
-		this.crossoverChance = 0.9;
-		this.mutationChance = 0.0001;
-		this.runs = 0;
+		//this.elites = 3;
+		//this.breedScore = 0.0;// 001;
+		//this.agentCount = 100;
+		//this.crossoverCount = Math.round( 20 * 0.5 );
+		//this.crossoverChance = 0.9;
+		//this.mutationChance = 0.0001;
+		//this.runs = 0;
 
 		this.sortingFunction = SortingFunction.forName();
 		this.fitnessFunction = FitnessFunction.forName();
@@ -1268,8 +1268,6 @@ class ANNLab extends Object {
 			.addLayer( 1, "SigmoidActivator", [ 0.7 ] );
 
 		this.protoAgent.isDirty = true;
-
-		//this.target = [ 0.7 ];
 
 		this.agents;
 
@@ -1325,7 +1323,7 @@ class ANNLab extends Object {
 						criteria[ funcName ][ optName ] = this.fixValue( inp );
 						
 					} else {
-				//console.log(subName,optName);
+
 						const grpName = optName.substring( 0, optName.indexOf( "." ) ); 
 						if ( ! criteria[ funcName ][ grpName ] ) {
 							criteria[ funcName ][ grpName ] = {};
@@ -1333,12 +1331,7 @@ class ANNLab extends Object {
 						criteria[ funcName ][ grpName ][ subName ] = this.fixValue( inp );
 					}
 				}
-				
-				//console.log(optName, subName);
 			}
-			
-			//console.log( opt.id, fullName );
-			
 		}
 		
 		this.criteria = criteria;
@@ -1374,13 +1367,6 @@ class ANNLab extends Object {
 			this.selectionFunction = SelectionFunction.forName( this.criteria.SelectionFunction.name );
 			this.selectionFunction.setCriteria( this.criteria.SelectionFunction );
 			
-			//this.crossoverFunction.opts.count = this.crossoverCount;
-			//this.crossoverFunction.opts.chance = this.crossoverChance;
-			//this.crossoverFunction.opts.k = 2;
-			//this.crossoverFunction.opts.mutationFunction = this.mutationFunction;
-
-			//this.mutationFunction.opts.chance = this.mutationChance;
-
 			this.incarnateProtoAgent();
 			this.agents = new LinkedList();
 
@@ -1446,130 +1432,7 @@ class ANNLab extends Object {
 
 		+ "\nMuTAt3 " + MuTAt3;
 
-	}
-
-
-	runGens ( n = 100 ) {
-		this.incarnateProtoAgent();
-
-		this.agents = new LinkedList();
-
-		for ( let i = 0; i < this.agentCount; i++ ) {
-			this.agents.add( this.protoAgent.replicate( i ) );
-		}
-
-		this.node.progress.value = 0;
-		this.node.progress.max = n;
-		let i = 0;
-
-		this.crossoverFunction.opts.count = this.crossoverCount;
-		this.crossoverFunction.opts.chance = this.crossoverChance;
-		this.crossoverFunction.opts.k = 2;
-		this.crossoverFunction.opts.mutationFunction = this.mutationFunction;
-
-		this.mutationFunction.opts.chance = this.mutationChance;
-
-		Promise.resolve().then( ()=>{
-			for ( i = 0; i < n; i ++ ) {
-				setTimeout( this.runGen.bind(this), 0 );
-			}
-		});
-
 	};
-
-	runGen () {
-		this.node.progress.value++;
-
-		let run = this.run();
-
-		this.sortingFunction.sort( this.agents )
-
-		let MuTAt3 = 0;
-
-		const iterable = this.agents.values();
-		let agentA = null;
-		let agentB = null;
-
-		for ( let agent of iterable ) {
-			if ( agent.isElite || agent.lastScore <= this.breedScore ) {
-				//console.warn("Elite", agent);
-				continue;
-			}
-
-			if ( agentA == null ) {
-				agentA = agent;
-			} else if ( agentB == null ) {
-				agentB = agent;
-
-				MuTAt3 += this.copulate( agentA, agentB );
-
-				agentA = null;
-				agentB = null;
-			}
-
-		}
-
-
-//		for ( let i = this.elites; i < this.agents.length; i += 2 ) {
-//			if ( i + 1 < this.agents.length ) {
-//				// FIXME: iterate using .next()...
-//				//const agentA = this.agents[ i ];
-//				const agentA = this.agents.get( i );
-//				if ( agentA.lastScore <= this.breedScore ) {
-//					i--;
-//					continue;
-//				}
-//				//const agentB = this.agents[ i + 1 ];
-//				const agentB = this.agents.get( i + 1 );
-//				MuTAt3 += this.copulate( agentA, agentB );
-//			}
-//		}
-
-		const div = this._node.querySelector( "pre" );
-		div.innerHTML = this.runs + "\n" + run + "\nMuTAt3 " + MuTAt3;
-	};
-
-
-	run () {
-
-		const inputBiases = this.protoAgent.inputBiases;
-		for ( let agent of this.agents ) {
-			agent.prepareRun( inputBiases );
-		}
-
-		const runResult = this.fitnessFunction.scorePopulation( this.agents, this.protoAgent.outputBiases );
-
-		this.elitismFunction.promote( this.agents, {} );
-
-		this.runs ++;
-
-		return [ [ runResult.best.lastScore, runResult.worst.lastScore ],
-			[ runResult.lowest.lastScore, runResult.highest.lastScore ],
-			[ runResult.start, runResult.end, runResult.run ] ];
-	};
-
-
-	copulate ( agentA, agentB ) {
-
-		let dnaA = agentA.dna;
-		let dnaB = agentB.dna;
-
-		let MuTAt3 = 0;
-
-		for ( let i = 0; i < dnaA.length; i++ ) {
-			let partA = dnaA[ i ];
-			let partB = dnaB[ i ];
-
-			MuTAt3 += this.crossoverFunction.crossover( partA, partB );
-
-		}
-
-		agentA.dna = dnaA;
-		agentB.dna = dnaB;
-
-		return MuTAt3;
-	};
-
 
 	incarnateProtoAgent () {
 		console.log( this.node.protoDiv );
