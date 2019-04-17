@@ -129,7 +129,7 @@ class SingletonObject extends Object {
 		const instanceNames = [];
 
 		for ( let instanceName in this.instance ) {
-			if ( instanceName != "defaultInstance" ) {
+			if ( instanceName != "defaultInstance" && instanceName != "allOptions" ) {
 				instanceNames.push( instanceName );
 			}
 		}
@@ -161,6 +161,7 @@ class SingletonObject extends Object {
 		if ( ! this.instances ) {
 			this.instances = new SingletonObject();
 			this.instances.defaultInstance = this.name;
+			this.instances.allOptions = [];
 		}
 		return this.instances;
 	};
@@ -170,7 +171,11 @@ class SingletonObject extends Object {
 	 * then the instance will be returned by forName when a name isn't given.
 	 */
 	static register ( instance, asDefault ) {
-		this.instance[ instance.name ] = new instance();
+		const newInstance = new instance();
+		this.instance[ instance.name ] = newInstance;
+		if ( newInstance.options ) {
+			this.instances.allOptions.push( ...newInstance.options )
+		}
 		if ( asDefault ) {
 			this.instances.defaultInstance = instance.name;
 		}
@@ -912,41 +917,11 @@ SelectionFunction.register( TopPercentileSelectionFunction );
  * The Bedding Function groups parents. Typically into groups of 2 (default), however, possibly more, and based on criteria.
  */
 class BeddingFunction extends SingletonObject {
-
-	static XcanBed ( i, n, population ) {
-
-		for ( ; i < i + n; i++ ) {
-			if ( !population.get( i ).isSelected ) {
-				return false;
-			}
-		}
+	constructor () {
+		super();
+		this.name = "Pairs";
 	};
-
-	XbedPopulation ( population, criteria ) {
-
-		if ( criteria == null || criteria.count == null ) {
-			criteria = { count : 2 };
-		}
-
-		const ret = [];
-
-		for ( let i = 0; i < population.length; i += criteria.count ) {
-			if ( i + criteria.count - 1 < population.length && BeddingFunction.canBed( i , criteria.count, population ) ) {
-
-				const bed = [];
-
-				for ( let j = i; j < i + criteria.count; j++ ) {
-					bed.push( population.get( j ) );
-				}
-
-				ret.push( bed );
-			}
-		}
-
-		return ret;
-	}
-
-
+	
 	static canBed ( parent ) {
 		return parent.isSelected;
 	};
@@ -988,6 +963,26 @@ class CrossoverFunction extends SingletonObject {
 		this.opts.count = 0;
 		this.opts.chance = 0.0;
 		this.opts.mutationFunction = null;
+		
+		this.options = [
+			{
+				name: "Chance",
+				help: "",
+				forCriteria: "chance",
+				type: { type:"perc", min:0, max: 100, step:1, value: 90 },
+				nature: "optional-checked"
+			},
+			{
+				name: "Percent",
+				help: "",
+				forCriteria: "count",
+				type: { type:"perc", min:0, max: 100, step:1, value: 50 },
+				nature: "optional-checked"
+			}
+		];
+
+		
+		
 	}
 
 	/**
@@ -1022,6 +1017,17 @@ class KPointCrossoverFunction extends CrossoverFunction {
 		this.name = "kPoint";
 
 		this.opts.k = 1;
+		
+		this.options = [
+			{
+				name: "Points",
+				help: "",
+				forCriteria: "k",
+				type: { type:"int", min:1, step:1, value: 1 },
+				nature: "optional-checked"
+			}
+		];
+
 	};
 
 	crossover ( dnaA, dnaB ) {
@@ -1065,8 +1071,21 @@ class MutationFunction extends SingletonObject {
 	constructor () {
 		super();
 
+		this.name = "Subtle";
+
 		this.opts = {};
 		this.opts.chance = 0.0;
+		
+		this.options = [
+			{
+				name: "Chance",
+				help: "",
+				forCriteria: "chance",
+				type: { type:"perc", min:0, max: 100, step:0.001, value: 0.001 },
+				nature: "optional-checked"
+			}
+		];
+
 	};
 
 	mutate ( index, dnaA, dnaB ) {
@@ -1092,6 +1111,9 @@ MutationFunction.register( MutationFunction );
 class AggressiveMutationFunction extends MutationFunction {
 	constructor () {
 		super();
+		
+		this.name = "Aggressive";
+		this.options = [];
 	};
 
 	mutate ( index, dnaA, dnaB ) {
@@ -1481,7 +1503,18 @@ class ANNLab extends Object {
 				this.makeOptionGroup( "Selection", SelectionFunction, this.selectionFunction )
 				);
 				
-		window.ttt = this.selectionFunction;
+		document.body.appendChild(
+				this.makeOptionGroup( "Bedding", BeddingFunction, this.beddingFunction )
+				);
+		
+		document.body.appendChild(
+				this.makeOptionGroup( "Crossover", CrossoverFunction, this.crossoverFunction )
+				);
+
+		document.body.appendChild(
+				this.makeOptionGroup( "Mutation", MutationFunction, this.mutationFunction )
+				);
+
 		
 		node.elites = node.querySelector( "#eliteCount" );
 		node.elites.value = this.elites;
@@ -1633,8 +1666,10 @@ class ANNLab extends Object {
 		const funcSelDiv = this.makeOptDiv( "Function", funcSelect );
 		div.appendChild( funcSelDiv );
 
-		if ( thisFunc.options ) {
-			for ( let option of thisFunc.options ) {
+		//if ( thisFunc.options ) {
+		if ( Func.instances.allOptions ) {
+			//for ( let option of thisFunc.options ) {
+			for ( let option of Func.instances.allOptions ) {
 				if ( !option.group ) {
 					
 					const sot = option.type;
