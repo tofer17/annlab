@@ -561,6 +561,36 @@ class FitnessFunction extends SingletonObject {
 	constructor () {
 		super();
 		this.name = "Target Delta";
+//		this.options = [
+//			{
+//				name: "Minimum Count",
+//				help: "",
+//				forCriteria: "minCount",
+//				type: { type:"int", min:0, step:1, value:1 },
+//				nature: "optional-checked"
+//			},
+//			{
+//				name: "Maximum Count",
+//				help: "",
+//				forCriteria: "maxCount",
+//				type: { type:"int", min:0,step:1 },
+//				nature: "optional"
+//			},
+//			{
+//				name: "Top Percent",
+//				help: "",
+//				forCriteria: "topPerc",
+//				type: { type:"perc", min:0, max:100, step:1, value:10 },
+//				nature: "exclusive"
+//			},
+//			{
+//				name: "Score &lt;=",
+//				help: "",
+//				forCriteria: "lteScore",
+//				type: { type:"dec", min:0, step:0.0001, value:0.0001 },
+//				nature: "exclusive"
+//			}
+//		];
 	};
 
 	scoreAgent ( agent, targets ) {
@@ -795,6 +825,10 @@ SortingFunction.register( AscendingSortingFunction, true );
  * The Selection Function marks agents in a population as parents for breeding based on a criteria.
  */
 class SelectionFunction extends SingletonObject {
+	constructor () {
+		super();
+		this.name = "All";
+	}
 	/**
 	 * The default behavior is to select all.
 	 */
@@ -813,6 +847,42 @@ SelectionFunction.register( SelectionFunction );
  * Selects a "top percentile" of agents for breeding (90%, rounded, by default).
  */
 class TopPercentileSelectionFunction extends SingletonObject {
+	constructor () {
+		super();
+		this.name = "Top Precentile";
+		
+		this.options = [
+			{
+				name: "Minimum Count",
+				help: "",
+				forCriteria: "minCount",
+				type: { type:"int", min:0, step:1 },
+				nature: "optional"
+			},
+			{
+				name: "Maximum Count",
+				help: "",
+				forCriteria: "maxCount",
+				type: { type:"int", min:0,step:1 },
+				nature: "optional"
+			},
+			{
+				name: "Top Percent",
+				help: "",
+				forCriteria: "topPerc",
+				type: { type:"perc", min:0, max:100, step:1, value:90 },
+				nature: "exclusive"
+			},
+			{
+				name: "Score &lt;=",
+				help: "",
+				forCriteria: "lteScore",
+				type: { type:"dec", min:0, step:0.0001, value:0.0001 },
+				nature: "exclusive"
+			}
+		];
+	};
+	
 	select ( population, criteria ) {
 
 		if ( criteria == null || criteria.percentage == null ) {
@@ -1400,8 +1470,19 @@ class ANNLab extends Object {
 		}
 
 		document.body.appendChild(
-		this.makeOptionGroup( "Elitism", this.elitismFunction )
-		);
+				this.makeOptionGroup( "Elitism", ElitismFunction, this.elitismFunction )
+				);
+				
+		document.body.appendChild(
+				this.makeOptionGroup( "Fitness Scoring", FitnessFunction, this.fitnessFunction )
+				);
+	
+		document.body.appendChild(
+				this.makeOptionGroup( "Selection", SelectionFunction, this.selectionFunction )
+				);
+				
+		window.ttt = this.selectionFunction;
+		
 		node.elites = node.querySelector( "#eliteCount" );
 		node.elites.value = this.elites;
 		node.elites.addEventListener( "change", (e)=>{ this.elites = parseInt( e.target.value ); } );
@@ -1525,7 +1606,7 @@ class ANNLab extends Object {
 		return inp;
 	};
 	
-	makeOptionGroup ( name, func ) {
+	makeOptionGroup ( name, Func, thisFunc ) {
 //	<div class="optgroup">
 //		<h3>Elitism</h3>
 //		<div class="opt">
@@ -1544,37 +1625,46 @@ class ANNLab extends Object {
 		div.appendChild( h3 );
 		h3.innerHTML = name;
 
-window.xxx = func;
-if ( !window.yyy ) window.yyy=div;
+//window.xxx = func;
+//if ( !window.yyy ) window.yyy=div;
 
-		const funcSelect = func.constructor.makeSelectElement();
-		func.constructor.populateSelect( funcSelect );
+		const funcSelect = Func.makeSelectElement();
+		Func.populateSelect( funcSelect, thisFunc.constructor.name );
 		const funcSelDiv = this.makeOptDiv( "Function", funcSelect );
 		div.appendChild( funcSelDiv );
-		
-		for ( let option of func.options ) {
-			if ( !option.group ) {
 
-			} else {
-				const subOptDiv = document.createElement( "h4" );
-				subOptDiv.innerHTML = option.group;
-				div.appendChild( subOptDiv );
-				subOptDiv.classList.add( "suboptgroup" );
-				for ( let subOpt of option.opts ) {
-					const sot = subOpt.type;
+		if ( thisFunc.options ) {
+			for ( let option of thisFunc.options ) {
+				if ( !option.group ) {
+					
+					const sot = option.type;
 					const subOptInp = this.makeOptInput( sot.type, sot.min, sot.max, sot.step, sot.value );
-					subOptInp.id = option.id + "." + subOpt.forCriteria;
-					const sod = this.makeOptDiv( subOpt.name, subOptInp, subOpt.nature, option.id );
+					subOptInp.id = option.id + "." + option.forCriteria;
+					const sod = this.makeOptDiv( option.name, subOptInp, option.nature, option.id );
 
 					div.appendChild( sod );
-				}
 
+				} else {
+					const subOptDiv = document.createElement( "h4" );
+					subOptDiv.innerHTML = option.group;
+					div.appendChild( subOptDiv );
+					subOptDiv.classList.add( "suboptgroup" );
+					for ( let subOpt of option.opts ) {
+						const sot = subOpt.type;
+						const subOptInp = this.makeOptInput( sot.type, sot.min, sot.max, sot.step, sot.value );
+						subOptInp.id = option.id + "." + subOpt.forCriteria;
+						const sod = this.makeOptDiv( subOpt.name, subOptInp, subOpt.nature, option.id );
+	
+						div.appendChild( sod );
+					}
+	
+				}
 				const rad = div.querySelector("[name=\"" + option.id + "\"]" );
 				if ( rad != null ) {
 					rad.checked = true;
 				}
-			}
 
+			}
 		}
 		
 		
